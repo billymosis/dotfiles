@@ -4,10 +4,12 @@
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 export PATH=~/.local/bin:$PATH
-export PATH=$PATH:~/tools/lua-language-server-3.0.2-linux-x64/bin/
+export PATH=$PATH:~/tools/lua-language-server-3.2.4-linux-x64/bin/
 export GOPATH=$HOME/go
 export GOROOT=/usr/local/go
 export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
+export PATH="$PATH:$(yarn global bin)"
+# export TERM=screen-256color
 source "$HOME/.cargo/env"
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
@@ -78,6 +80,7 @@ ZSH_THEME="billy"
 plugins=(git)
 
 source $ZSH/oh-my-zsh.sh
+tmux source-file ~/tmux.conf
 
 # User configuration
 
@@ -105,16 +108,26 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
+case $- in *i*)
+    [ -z "$TMUX" ] && exec tmux
+esac
+
 alias v="nvim"
 alias lg="lazygit"
 alias w1="cd ~/work/majoo-ui"
 alias w2="cd ~/work/myklopos"
+alias w3="cd ~/work/backup/myklopos"
+alias p1="cd ~/personal/2022/bws"
+alias p2="cd ~/personal/2022/laravel.hkabwssumvi.id"
+alias q="cd ~/QuickScript/"
+alias q1="~/QuickScript/mysql.sh"
 export VISUAL=nvim
 export EDITOR=nvim
 
 source $HOME/.zsh/aliases
 
 echo "Custom Command \n\e[31mv\e[0m for \e[35mneovim\e[0m\n\e[31mlg\e[0m for \e[36mLazygit\e[0m"
+echo "Quick Script start with \e[31mq\e[0m"
 
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
