@@ -9,7 +9,6 @@ export GOPATH=$HOME/go
 export GOROOT=/usr/local/go
 export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
 export PATH="$PATH:$(yarn global bin)"
-# export TERM=screen-256color
 source "$HOME/.cargo/env"
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
