@@ -6,7 +6,8 @@ if vim.fn.empty(vim.fn.glob(install_path)) > 0 then
 end
 
 local packer_group = vim.api.nvim_create_augroup('Packer', { clear = true })
-vim.api.nvim_create_autocmd('BufWritePost', { command = 'source <afile> | PackerCompile', group = packer_group, pattern = 'init.lua' })
+vim.api.nvim_create_autocmd('BufWritePost',
+  { command = 'source <afile> | PackerCompile', group = packer_group, pattern = 'init.lua' })
 
 require('packer').startup(function(use)
   use 'wbthomason/packer.nvim' -- Package manager
@@ -21,12 +22,23 @@ require('packer').startup(function(use)
   -- Add git related info in the signs columns and popups
   use { 'lewis6991/gitsigns.nvim', requires = { 'nvim-lua/plenary.nvim' } }
   -- Highlight, edit, and navigate code using a fast incremental parsing library
-  use 'nvim-treesitter/nvim-treesitter'
+  use({
+    "nvim-treesitter/nvim-treesitter",
+    run = ":TSUpdate",
+  })
   -- Additional textobjects for treesitter
   use 'nvim-treesitter/nvim-treesitter-textobjects'
+
+  -- lsp
+  use 'williamboman/mason.nvim'
+  use 'williamboman/mason-lspconfig.nvim'
   use 'neovim/nvim-lspconfig' -- Collection of configurations for built-in LSP client
   use 'hrsh7th/nvim-cmp' -- Autocompletion plugin
   use 'hrsh7th/cmp-nvim-lsp'
+  use 'j-hui/fidget.nvim'
+  use 'simrat39/rust-tools.nvim'
+
+  -- other
   use 'saadparwaiz1/cmp_luasnip'
   use 'L3MON4D3/LuaSnip' -- Snippets plugin
   use {
@@ -38,14 +50,14 @@ require('packer').startup(function(use)
   use 'windwp/nvim-autopairs'
   use 'windwp/nvim-ts-autotag'
   use 'airblade/vim-rooter'
-  use 'kkoomen/vim-doge'
-  use 'luisiacc/gruvbox-baby'
   use 'tpope/vim-fugitive'
-  use 'simrat39/rust-tools.nvim'
   use 'fatih/vim-go'
   use 'folke/which-key.nvim'
-  use 'ThePrimeagen/harpoon'
+  use 'rebelot/kanagawa.nvim'
+  --[[ use 'j-morano/buffer_manager.nvim' ]]
+  use 'tpope/vim-sleuth' -- Detect tabstop and shiftwidth automatically
 end)
+
 
 require('nvim-autopairs').setup()
 require('nvim-ts-autotag').setup()
@@ -79,8 +91,13 @@ vim.o.updatetime = 250
 vim.wo.signcolumn = 'yes'
 
 --Set colorscheme
+
+require('kanagawa').setup({
+  transparent = true,
+})
+
 vim.o.termguicolors = true
-vim.cmd [[colorscheme gruvbox-baby]]
+vim.cmd [[colorscheme kanagawa]]
 
 -- Set completeopt to have a better completion experience
 vim.o.completeopt = 'menuone,noselect'
@@ -99,7 +116,7 @@ vim.opt.cursorline = true
 require('lualine').setup {
   options = {
     icons_enabled = false,
-    theme = 'gruvbox-baby',
+    theme = 'kanagawa',
     component_separators = '|',
     section_separators = '',
     globalstatus = true,
@@ -107,23 +124,6 @@ require('lualine').setup {
   sections = {
     lualine_a = { 'mode' },
     lualine_b = { 'branch', 'diff', 'diagnostics' },
-    lualine_c = { {
-      function()
-        local harpoon_number = require('harpoon.mark').get_index_of(vim.fn.bufname())
-        if harpoon_number then
-          return "ﯠ " .. harpoon_number
-        else
-          return "ﯡ "
-        end
-      end,
-      color = function()
-        if require('harpoon.mark').get_index_of(vim.fn.bufname()) then
-          return { fg = "#98be65", gui = 'bold' }
-        else
-          return { fg = "#ec5f67" }
-        end
-      end
-    } },
     lualine_x = { { 'filename', path = 1 } },
     lualine_y = { 'progress' },
     lualine_z = { 'location' }
@@ -192,12 +192,8 @@ require('telescope').setup {
 -- Enable telescope fzf native
 require('telescope').load_extension 'fzf'
 
--- Harpoon
-require("harpoon").setup({
-  menu = {
-    width = vim.api.nvim_win_get_width(0) - 4,
-  }
-})
+-- buffer_manager
+--[[ require("buffer_manager").setup({}) ]]
 
 require 'nvim-tree'.setup {
   update_focused_file = {
@@ -208,6 +204,7 @@ require 'nvim-tree'.setup {
 -- Treesitter configuration
 -- Parsers must be installed manually via :TSInstall
 require('nvim-treesitter.configs').setup {
+  ensure_installed = { 'c', 'cpp', 'lua', 'python', 'rust', 'typescript', 'help', 'php', 'json' },
   autotag = {
     enable = true,
   },
@@ -265,11 +262,13 @@ require('nvim-treesitter.configs').setup {
   },
 }
 
--- -- Diagnostic keymaps
--- vim.keymap.set('n', '<leader>le', vim.diagnostic.open_float)
--- vim.keymap.set('n', '[d', vim.diagnostic.goto_prev)
--- vim.keymap.set('n', ']d', vim.diagnostic.goto_next)
--- vim.keymap.set('n', '<leader>lq', vim.diagnostic.setloclist)
+require('mason').setup()
+
+local servers = { 'clangd', 'pyright', 'tsserver', 'eslint', 'intelephense', 'rust_analyzer', 'jsonls' }
+
+require('mason-lspconfig').setup({
+  ensure_installed = servers,
+})
 
 -- LSP settings
 local lspconfig = require 'lspconfig'
@@ -279,7 +278,6 @@ local capabilities = vim.lsp.protocol.make_client_capabilities()
 capabilities = require('cmp_nvim_lsp').default_capabilities(capabilities)
 
 -- Enable the following language servers
-local servers = { 'clangd', 'rust_analyzer', 'pyright', 'tsserver', 'eslint', 'gopls', 'intelephpense' }
 for _, lsp in ipairs(servers) do
   lspconfig[lsp].setup {
     on_attach = mykey.set_lsp_key,
@@ -287,7 +285,7 @@ for _, lsp in ipairs(servers) do
   }
 end
 
-require 'lspconfig'.intelephense.setup {}
+require('fidget').setup()
 
 -- xample custom server
 -- Make runtime files discoverable to the server
@@ -370,42 +368,18 @@ local rt = require("rust-tools")
 -- rust setup
 rt.setup(
   {
-    tools = { -- rust-tools options
-      autoSetHints = true,
-      inlay_hints = {
-        show_parameter_hints = false,
-        parameter_hints_prefix = "",
-        other_hints_prefix = "",
-      },
-    },
-
-    -- all the opts to send to nvim-lspconfig
-    -- these override the defaults set by rust-tools.nvim
-    -- see https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#rust_analyzer
     server = {
-      -- on_attach is a callback called when the language server attachs to the buffer
       on_attach = function(_, bufnr)
-        -- Hover actions
+        local opts = { buffer = bufnr }
+        mykey.setMap(opts)
         vim.keymap.set("n", "<C-space>", rt.hover_actions.hover_actions, { buffer = bufnr })
-        -- Code action groups
         vim.keymap.set("n", "<Leader>a", rt.code_action_group.code_action_group, { buffer = bufnr })
       end,
-      settings = {
-        -- to enable rust-analyzer settings visit:
-        -- https://github.com/rust-analyzer/rust-analyzer/blob/master/docs/user/generated_config.adoc
-        ["rust-analyzer"] = {
-          -- enable clippy on save
-          checkOnSave = {
-            command = "clippy"
-          },
-        }
-      }
     },
   }
 )
 
 -- tab title
-
 function _G.current_tab()
   local curr_buf = vim.fn.bufnr()
   local total = 0

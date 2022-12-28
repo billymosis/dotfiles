@@ -1,5 +1,7 @@
 require('which-key').setup()
 
+local map = vim.keymap.set
+
 --Remap space as leader key
 vim.keymap.set({ 'n', 'v' }, '<Space>', '<Nop>', { silent = true })
 vim.g.mapleader = ' '
@@ -12,9 +14,17 @@ vim.keymap.set('n', 'j', "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = tr
 local wk = require('which-key')
 
 local telescope = require('telescope.builtin')
-local harpoon = require('harpoon.ui')
-
-local marks = require('harpoon').get_mark_config().marks
+--[[ local bm = require('buffer_manager.ui') ]]
+local keys = '1234567890'
+--[[ for i = 1, #keys do ]]
+--[[   local key = keys:sub(i, i) ]]
+--[[   map( ]]
+--[[     'n', ]]
+--[[     string.format('<leader>%s', key), ]]
+--[[     function() require("buffer_manager.ui").nav_file(i) end, ]]
+--[[     {} ]]
+--[[   ) ]]
+--[[ end ]]
 
 local mappings = {
 
@@ -26,6 +36,7 @@ local mappings = {
       d = { ':silent %!prettier --stdin-filepath --single-quote --trailing-comma all %<CR>', 'prettier' },
       e = { vim.diagnostic.open_float, 'open current diagnostic' },
       q = { vim.diagnostic.setloclist, 'diagnostic list' },
+      f = { ':Format<CR>', 'format code' },
     },
 
     -- Git related
@@ -44,13 +55,7 @@ local mappings = {
     },
 
     -- harpoon
-    a = { function() require("harpoon.mark").add_file() end, 'add harpoon' },
-    ['<space>'] = { harpoon.toggle_quick_menu, 'harpoon list' },
-    ['1'] = { function() require("harpoon.ui").nav_file(1) end, 'nav 1' },
-    ['2'] = { function() require("harpoon.ui").nav_file(2) end, 'nav 2' },
-    ['3'] = { function() require("harpoon.ui").nav_file(3) end, 'nav 3' },
-    ['4'] = { function() require("harpoon.ui").nav_file(4) end, 'nav 4' },
-    ['5'] = { function() require("harpoon.ui").nav_file(5) end, 'nav 5' },
+    --[[ ['<space>'] = { bm.toggle_quick_menu, 'buffer list' }, ]]
 
     s = {
       f = { function()
@@ -81,8 +86,15 @@ wk.register(mappings)
 
 local M = {}
 
-function M.set_lsp_key(_, bufnr)
-  local opts = { buffer = bufnr }
+function M.setMap(opts)
+  vim.api.nvim_buf_create_user_command(opts.buffer, 'Format', function(_)
+    if vim.lsp.buf.format then
+      vim.lsp.buf.format()
+    elseif vim.lsp.buf.formatting then
+      vim.lsp.buf.formatting()
+    end
+  end, { desc = 'Format current buffer with LSP' })
+
   vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
   vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
   vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
@@ -98,7 +110,11 @@ function M.set_lsp_key(_, bufnr)
   vim.keymap.set('n', 'gr', vim.lsp.buf.references, opts)
   vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, opts)
   vim.keymap.set('n', '<leader>so', require('telescope.builtin').lsp_document_symbols, opts)
-  vim.keymap.set('n', '<leader>lf', vim.lsp.buf.formatting, {})
+end
+
+function M.set_lsp_key(_, bufnr)
+  local opts = { buffer = bufnr }
+  M.setMap(opts)
 end
 
 function M.set_gitsigns_key(bufnr)
