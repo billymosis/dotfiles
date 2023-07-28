@@ -1,0 +1,23 @@
+[Default Applications]
+x-scheme-handler/http=google-chrome.desktop
+x-scheme-handler/https=google-chrome.desktop
+x-scheme-handler/eclipse+command=_usr_share_dbeaver-ce_.desktop
+text/html=google-chrome.desktop
+x-scheme-handler/about=google-chrome.desktop
+x-scheme-handler/unknown=google-chrome.desktop
+application/octet-stream=org.gnome.FileRoller.desktop
+
+[Added Associations]
+image/svg+xml=xed.desktop;pix.desktop;
+image/png=com.github.maoschanz.drawing.desktop;pix.desktop;
+text/csv=xed.desktop;
+application/vnd.ms-publisher=xed.desktop;
+text/html=xed.desktop;
+application/x-desktop=xed.desktop;
+application/sql=nvim.desktop;
+application/x-mswinurl=xed.desktop;
+application/x-shellscript=xed.desktop;
+application/pdf=libreoffice-draw.desktop;
+image/jpeg=com.github.maoschanz.drawing.desktop;pix.desktop;
+application/x-mozilla-bookmarks=xed.desktop;
+application/octet-stream=org.gnome.FileRoller.desktop;

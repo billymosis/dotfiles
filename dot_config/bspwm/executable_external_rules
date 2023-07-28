@@ -1,0 +1,28 @@
+#! /bin/bash
+
+wid=$1
+class=$2
+instance=$3
+consequences=$4
+
+# notify-send "\$1=$(printf '0x%08X' "$1") \$2=$2 \$3=$3" "$4"
+
+if [[ $class == "Google-chrome" ]]; then
+	title="$(xprop -id "$wid" | grep _NET_WM_NAME\(UTF8_STRING\) | awk '{print $3}' | sed -e 's/^"//' -e 's/"$//' )"
+	case "$title" in
+		Layers|Tools|Warning|DevTools)
+			echo "focus=off state=floating"
+			;;
+	esac
+fi
+
+if [[ $class == "Shutter" ]]; then
+	echo "focus=off state=floating"
+fi
+
+case "$class" in
+	Lutris|Liferea)
+		eval "$consequences"
+		[ "$state" ] || echo "state=pseudo_tiled"
+		;;
+esac

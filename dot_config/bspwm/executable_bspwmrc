@@ -1,0 +1,64 @@
+#!/bin/bash
+
+# xprop class name title
+# xprop | awk '/^WM_CLASS/{sub(/.* =/, "name :"); sub(/,/, "\nclass:"); print} /^WM_NAME/{sub(/.* =/, "title:"); print}'
+#
+# This gives you the name | class | title of the window.
+#
+# And the rule format is
+# bspc rule -a class:name:title
+# or you can just class and name
+# bspc rule -a class:name
+# or you can just class
+# bspc rule -a class
+# or you can just name
+# bspc rule -a *:name
+
+pgrep -x sxhkd > /dev/null || sxhkd &
+pgrep -x light-locker > /dev/null || light-locker &
+pgrep -x onedrive > /dev/null || onedrive --monitor &
+
+IS_CONNECTED=$(xrandr | awk '/HDMI.* connected/ {print}' | awk '{ print$1 }')
+
+bspc config focus_follows_pointer true
+bspc config border_width         2
+bspc config window_gap          12
+bspc config focused_border_color "#98FB98"
+bspc config normal_border_color "#FFFFFF"
+
+bspc config split_ratio          0.52
+bspc config borderless_monocle   true
+bspc config gapless_monocle      true
+bspc config single_monocle true
+
+bspc rule -a Gimp desktop='^8' state=floating follow=on
+bspc rule -a Chromium desktop='^2'
+bspc rule -a mplayer2 state=floating
+bspc rule -a Kupfer.py focus=on
+bspc rule -a Screenkey manage=off
+wmname LG3D &
+
+bspc rule -a android-studio state=floating border=off follow=onspc 
+bspc rule -a Shutter:shutter:* -o state=floating
+
+bspc config external_rules_command $HOME/.config/bspwm/external_rules
+
+$HOME/.config/polybar/launch.sh &
+
+pgrep -x compton > /dev/null || compton &
+pgrep -x nm-applet > /dev/null || nm-applet &
+pgrep -x xfce4-power-manager > /dev/null || xfce4-power-manager &
+
+bspc config right_padding 0
+bspc config bottom_padding 0
+
+if [[ $IS_CONNECTED == "HDMI"* ]]; then
+    bspc monitor $IS_CONNECTED -d 1 2 3 4 5
+    bspc monitor eDP-1 -r
+    if [[ $(autorandr --current) != "docked" ]]; then
+        autorandr -c docked
+    fi
+else
+    bspc monitor -d 1 2 3 4 5
+    autorandr -c laptop
+fi
