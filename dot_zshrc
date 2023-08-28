@@ -1,5 +1,5 @@
 ZSH_THEME="billy"
-plugins=(git)
+plugins=(git poetry)
 
 export ZSH="$HOME/.oh-my-zsh"
 export PATH=~/.local/bin:$PATH
@@ -24,12 +24,7 @@ alias vf="fdfind --type f --hidden --exclude .git \
     --bind 'ctrl-/:change-preview-window(bottom:60%|hidden|),ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up' \
     | xargs nvim"
 alias lg="lazygit"
-alias w1="cd ~/work/majoo-ui"
-alias w2="cd ~/work/myklopos"
-alias w3="cd ~/work/backup/myklopos"
 alias p="cd ~/personal/"
-alias p1="cd ~/personal/2022/bws"
-alias p2="cd ~/personal/2022/laravel.hkabwssumvi.id"
 alias q="cd ~/QuickScript/"
 alias q1="~/QuickScript/mysql.sh"
 alias q2="~/QuickScript/postgresql.sh"
@@ -37,18 +32,11 @@ alias config='/usr/bin/git --git-dir=/home/omegalord666/.cfg/ --work-tree=/home/
 alias start='~/my.sh'
 alias cpcl='xclip -sel clip'
 
-source $HOME/.zsh/aliases
 source $HOME/.cargo/env 2> /dev/null
 source $ZSH/oh-my-zsh.sh
 
-
-echo "Custom Command \n\e[31mv\e[0m for \e[35mneovim\e[0m\n\e[31mlg\e[0m for \e[36mLazygit\e[0m"
-echo "Quick Script start with \e[31mq\e[0m"
-
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-
-echo $TERM_PROGRAM
 
 if [[ ! $TERM_PROGRAM =~ tmux ]] 
 then
