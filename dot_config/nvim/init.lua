@@ -136,7 +136,13 @@ require('lazy').setup({
   { 'windwp/nvim-autopairs' },
   { 'windwp/nvim-ts-autotag' },
   { 'airblade/vim-rooter' },
-  { 'alexghergh/nvim-tmux-navigation' }
+  { 'alexghergh/nvim-tmux-navigation' },
+  {
+    "mickael-menu/zk-nvim",
+    config = function()
+      require("zk").setup()
+    end
+  }
 }, {})
 
 require('nvim-autopairs').setup()
@@ -291,7 +297,8 @@ require('nvim-treesitter.configs').setup {
   sync_install = false,
   ignore_install = {},
   -- Add languages to be installed here that you want installed for treesitter
-  ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'tsx', 'typescript', 'vimdoc', 'vim', 'html', 'css', 'javascript' },
+  ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'tsx', 'typescript', 'vimdoc', 'vim', 'html', 'css',
+    'javascript' },
 
   -- Autoinstall languages that are not installed. Defaults to false (but you can change for yourself!)
   auto_install = false,

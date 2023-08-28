@@ -1,0 +1,66 @@
+[note]
+filename = "{{id}}-{{slug title}}"
+template = "default.md"
+
+[group.daily]
+paths = ["daily"]
+
+[group.daily.note]
+filename = "{{format-date now '%Y-%m-%d'}}"
+extension = "md"
+template = "daily.md"
+
+[format.markdown]
+# Either "wiki", "markdown" or a custom template. Default is "markdown".
+link-format = "markdown"
+hashtags = true
+colon-tags = false
+multiword-tags = false
+
+
+# EXTERNAL TOOLS
+[tool]
+fzf-preview = "batcat -p --color always {-1}"
+
+
+[lsp]
+
+[lsp.diagnostics]
+# Each diagnostic can have for value: none, hint, info, warning, error
+wiki-title = "hint"
+dead-link = "error"
+
+[lsp.completion]
+note-label = "{{title-or-path}}"
+note-filter-text = "{{title}} {{path}}"
+note-detail = "{{filename-stem}}"
+
+[filter]
+
+# Matches the notes created the last two weeks. For example:
+#    $ zk list recents --limit 15
+#    $ zk edit recents --interactive
+recents = "--sort created- --created-after 'last two weeks'"
+
+[alias]
+ls = "zk edit -i $@"
+n = 'zk new --title "$*"'
+
+# Edit this configuration file.
+conf = '$EDITOR "$ZK_NOTEBOOK_DIR/.zk/config.toml"'
+d = 'zk new --no-input "$ZK_NOTEBOOK_DIR/daily"'
+e = 'zk edit $@'
+# Edit the last modified note.
+el = "zk edit --limit 1 --sort modified- $@"
+# Print the backlinks of a note
+bl = "zk list --link-to $@"
+unlinked = "zk edit --link-to none -i"
+# Browse the Git history of selected notes
+log = "zk list --quiet --format path --delimiter0 $@ | xargs -0 git log --patch --"
+# Saving the changes in the Git repository
+save = 'git add . && git commit -m "$*"'
+um = "zk list --mentioned-by $1 --no-linked-by $1"
+tag = "zk list --tag $@"
+lucky = "zk list --quiet --format full --sort random --limit 1"
+# ex zk search useful for meta "id: ri4q"
+meta = 'zk list -Mre -m $@'
