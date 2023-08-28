@@ -15,6 +15,7 @@ export PATH=$PATH:/home/omegalord666/mobile/flutter/bin
 export PATH=$PATH:~/.spoof-dpi/bin
 export PATH=$PATH:$HOME/.config/composer/vendor/bin
 export PATH=$PATH:$HOME/personal/blender-3.6.1-linux-x64
+export ZK_NOTEBOOK_DIR=$HOME/my-notes
 
 alias v="nvim"
 alias vf="fdfind --type f --hidden --exclude .git \
