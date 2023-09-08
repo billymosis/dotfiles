@@ -49,10 +49,17 @@ require('lazy').setup({
         changedelete = { text = '~' },
       },
       on_attach = function(bufnr)
-        vim.keymap.set('n', '<leader>gp', require('gitsigns').prev_hunk,
+        local gs = require('gitsigns')
+        vim.keymap.set('n', '<leader>gp', gs.prev_hunk,
           { buffer = bufnr, desc = '[G]o to [P]revious Hunk' })
-        vim.keymap.set('n', '<leader>gn', require('gitsigns').next_hunk, { buffer = bufnr, desc = '[G]o to [N]ext Hunk' })
-        vim.keymap.set('n', '<leader>ph', require('gitsigns').preview_hunk, { buffer = bufnr, desc = '[P]review [H]unk' })
+        vim.keymap.set('n', '<leader>gn', gs.next_hunk, { buffer = bufnr, desc = '[G]o to [N]ext Hunk' })
+        vim.keymap.set('n', '<leader>hp', gs.preview_hunk, { buffer = bufnr, desc = '[P]review [H]unk' })
+        vim.keymap.set({ 'n', 'v' }, '<leader>hs', ':Gitsigns stage_hunk<CR>', { buffer = bufnr, desc = 'Stage Hunk' })
+        vim.keymap.set({ 'n', 'v' }, '<leader>hr', ':Gitsigns reset_hunk<CR>', { buffer = bufnr, desc = 'Reset Hunk' })
+        vim.keymap.set('n', '<leader>hD', function() gs.diffthis('~') end, { buffer = bufnr, desc = 'Diff this' })
+        vim.keymap.set('n', '<leader>hb', function() gs.blame_line { full = true } end,
+          { buffer = bufnr, desc = 'blame line' })
+        vim.keymap.set('n', '<leader>hB', gs.toggle_current_line_blame, { buffer = bufnr, desc = 'toggle current line' })
       end,
     },
   },
@@ -142,7 +149,7 @@ require('lazy').setup({
     config = function()
       require("zk").setup()
     end
-  }
+  },
 }, {})
 
 require('nvim-autopairs').setup()
@@ -195,6 +202,10 @@ require('Comment').setup {
 -- [[ Setting options ]]
 -- See `:help vim.o`
 -- NOTE: You can change these options as you wish!
+
+vim.o.spelllang = "en_US"
+vim.o.spell = true
+vim.o.spelloptions = "camel"
 
 -- Set highlight on search
 vim.o.hlsearch = false
@@ -289,6 +300,7 @@ vim.keymap.set('n', '<leader>sh', require('telescope.builtin').help_tags, { desc
 vim.keymap.set('n', '<leader>sw', require('telescope.builtin').grep_string, { desc = '[S]earch current [W]ord' })
 vim.keymap.set('n', '<leader>sg', require('telescope.builtin').live_grep, { desc = '[S]earch by [G]rep' })
 vim.keymap.set('n', '<leader>sd', require('telescope.builtin').diagnostics, { desc = '[S]earch [D]iagnostics' })
+vim.keymap.set('n', '<leader>sr', require('telescope.builtin').resume, { desc = '[S]earch [R]resume' })
 
 -- [[ Configure Treesitter ]]
 -- See `:help nvim-treesitter`
@@ -371,7 +383,7 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 
 -- [[ Configure LSP ]]
 --  This function gets run when an LSP connects to a particular buffer.
-local on_attach = function(_, bufnr)
+local on_attach = function(client, bufnr)
   -- NOTE: Remember that lua is a real programming language, and as such it is possible
   -- to define small helper and utility functions so you don't have to repeat yourself
   -- many times.
@@ -408,11 +420,25 @@ local on_attach = function(_, bufnr)
     print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
   end, '[W]orkspace [L]ist Folders')
 
+  vim.keymap.set("v", "<leader>lf", vim.lsp.buf.format, { remap = false, desc = 'Format range' })
   -- Create a command `:Format` local to the LSP buffer
   vim.api.nvim_buf_create_user_command(bufnr, 'Format', function(_)
-    vim.lsp.buf.format()
+    if vim.lsp.buf.format then
+      vim.lsp.buf.format()
+    elseif vim.lsp.buf.formatting then
+      vim.lsp.buf.formatting()
+    end
   end, { desc = 'Format current buffer with LSP' })
 end
+
+local prettierformat = {
+  formatCommand = string.format(
+    "%s --stdin --stdin-filepath '${INPUT}' ${--range-start:charStart}' " ..
+    '${--range-end:charEnd} ${--tab-width:tabSize} ${--use-tabs:!insertSpaces}',
+    'prettier'),
+  formatStdin = true,
+  formatCanRange = true
+}
 
 -- Enable the following language servers
 --  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
@@ -424,15 +450,56 @@ end
 --  define the property 'filetypes' to the map in question.
 local servers = {
   clangd = {},
-  gopls = {},
+  -- gopls = {},
   pyright = {},
   rust_analyzer = {},
-  tsserver = {},
-  html = { filetypes = { 'html', 'twig', 'hbs' } },
   bashls = {},
-  jsonls = {},
-  eslint = {},
+  tsserver = {
+    -- Use prettier instead default formatter
+    on_attach = function(client, bufnr)
+      client.server_capabilities.documentFormattingProvider = false
+      client.server_capabilities.documentRangeFormattingProvider = false
+      on_attach(client, bufnr)
+    end
+  },
   tailwindcss = {},
+  jsonls = {},
+  html = { filetypes = { 'html', 'twig', 'hbs' } },
+  eslint = {
+    -- Code Action auto fix all on save
+    on_attach = function(client, bufnr)
+      vim.api.nvim_create_autocmd("BufWritePre", {
+        buffer = bufnr,
+        command = "EslintFixAll"
+      })
+      on_attach(client, bufnr)
+    end
+  },
+  efm = {
+    init_options = { documentFormatting = true },
+    filetypes = { 'python', 'javascript', 'typescript', 'typescriptreact', 'css', 'html' },
+    settings = {
+      rootMarkers = { ".git/" },
+      languages = {
+        python = {
+          { formatCommand = string.format('%s --no-color -q -', 'black'), formatStdin = true }
+        },
+        javascript = {
+          {
+            prettierformat
+          }
+        },
+        typescript = {
+          {
+            prettierformat
+          }
+        },
+        typescriptreact = {
+          prettierformat
+        }
+      }
+    }
+  },
 
   lua_ls = {
     Lua = {
@@ -459,9 +526,10 @@ mason_lspconfig.setup {
 mason_lspconfig.setup_handlers {
   function(server_name)
     require('lspconfig')[server_name].setup {
+      init_options = (servers[server_name] or {}).init_options,
       capabilities = capabilities,
-      on_attach = on_attach,
-      settings = servers[server_name],
+      on_attach = (servers[server_name].on_attach or on_attach),
+      settings = (servers[server_name] or {}).settings,
       filetypes = (servers[server_name] or {}).filetypes,
     }
   end
@@ -472,6 +540,7 @@ mason_lspconfig.setup_handlers {
 local cmp = require 'cmp'
 local luasnip = require 'luasnip'
 require('luasnip.loaders.from_vscode').lazy_load()
+require('luasnip.loaders.from_vscode').load({ paths = { "./my_snippets" } })
 luasnip.config.setup {}
 
 cmp.setup {
@@ -539,8 +608,17 @@ vim.keymap.set('n', "<C-\\>", nvim_tmux_nav.NvimTmuxNavigateLastActive)
 vim.keymap.set('n', "<C-Space>", nvim_tmux_nav.NvimTmuxNavigateNext)
 
 vim.keymap.set('n', "<leader>lf", ":Format <CR>", { desc = "Format LSP" })
+vim.keymap.set('n', "<leader>ld", ":silent %!prettier --stdin-filepath --single-quote --trailing-comma all %<CR>",
+  { desc = "Format LSP" })
 vim.keymap.set('n', "<leader>le", vim.diagnostic.open_float, { desc = "Open current diagnostic" })
 vim.keymap.set('n', "<leader>lq", vim.diagnostic.setloclist, { desc = "Diagnostic list" })
 
 vim.keymap.set('n', "<leader>lz", ":set wrap! <CR>", { desc = "toggle wrap" })
 vim.keymap.set('n', "<leader>lx", ":set rnu! <CR>", { desc = "toggle relative number" })
+vim.cmd([[
+highlight Normal guibg=none
+highlight NonText guibg=none
+highlight Normal ctermbg=none
+highlight NonText ctermbg=none
+highlight EndOfBuffer guibg=NONE ctermbg=NONE
+]])
