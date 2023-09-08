@@ -6,6 +6,8 @@ text/html=google-chrome.desktop
 x-scheme-handler/about=google-chrome.desktop
 x-scheme-handler/unknown=google-chrome.desktop
 application/octet-stream=org.gnome.FileRoller.desktop
+x-scheme-handler/mailto=google-chrome.desktop
+x-scheme-handler/postman=Postman.desktop
 
 [Added Associations]
 image/svg+xml=xed.desktop;pix.desktop;
