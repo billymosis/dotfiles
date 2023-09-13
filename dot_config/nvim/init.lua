@@ -203,9 +203,9 @@ require('Comment').setup {
 -- See `:help vim.o`
 -- NOTE: You can change these options as you wish!
 
-vim.o.spelllang = "en_US"
-vim.o.spell = true
-vim.o.spelloptions = "camel"
+-- vim.o.spelllang = "en_US"
+-- vim.o.spell = true
+-- vim.o.spelloptions = "camel"
 
 -- Set highlight on search
 vim.o.hlsearch = false
