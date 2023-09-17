@@ -33,6 +33,8 @@ alias q2="~/QuickScript/postgresql.sh"
 alias config='/usr/bin/git --git-dir=/home/omegalord666/.cfg/ --work-tree=/home/omegalord666'
 alias start='~/my.sh'
 alias cpcl='xclip -sel clip'
+alias restore-directory='find . -type d -exec chmod 755 {} \;'
+alias restore-file='find . -type f -exec chmod 644 {} \;'
 
 source $HOME/.cargo/env 2> /dev/null
 source $ZSH/oh-my-zsh.sh
@@ -66,7 +68,6 @@ case ":$PATH:" in
   *":$PNPM_HOME:"*) ;;
   *) export PATH="$PNPM_HOME:$PATH" ;;
 esac
-
 # pnpm end
 
 # export PYENV_ROOT="$HOME/.pyenv"
