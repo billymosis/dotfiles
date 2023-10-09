@@ -94,9 +94,10 @@ require('lazy').setup({
 
   {
     'lukas-reineke/indent-blankline.nvim',
+    main = "ibl",
     opts = {
-      char = '┊',
-      show_trailing_blankline_indent = false,
+      indent = { char = "┊" },
+      scope = { enabled = false }
     },
   },
 
@@ -150,6 +151,11 @@ require('lazy').setup({
       require("zk").setup()
     end
   },
+  {
+    'creativenull/efmls-configs-nvim',
+    version = 'v1.x.x', -- version is optional, but recommended
+    dependencies = { 'neovim/nvim-lspconfig' },
+  }
 }, {})
 
 require('nvim-autopairs').setup()
@@ -310,7 +316,7 @@ require('nvim-treesitter.configs').setup {
   ignore_install = {},
   -- Add languages to be installed here that you want installed for treesitter
   ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'tsx', 'typescript', 'vimdoc', 'vim', 'html', 'css',
-    'javascript' },
+    'javascript', 'markdown' },
 
   -- Autoinstall languages that are not installed. Defaults to false (but you can change for yourself!)
   auto_install = false,
@@ -440,6 +446,15 @@ local prettierformat = {
   formatCanRange = true
 }
 
+local cpplint = {
+  prefix = 'cpplint',
+  lintSource = 'cpplint',
+  lintCommand = string.format('%s "${INPUT}"', 'cpplint'),
+  lintStdin = false,
+  lintFormats = { '%.%#:%l: %m' },
+  rootMarkers = {}
+}
+
 -- Enable the following language servers
 --  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
 --
@@ -475,9 +490,10 @@ local servers = {
       on_attach(client, bufnr)
     end
   },
+  omnisharp = {},
   efm = {
     init_options = { documentFormatting = true },
-    filetypes = { 'python', 'javascript', 'typescript', 'typescriptreact', 'css', 'html' },
+    filetypes = { 'python', 'javascript', 'typescript', 'typescriptreact', 'css', 'html', 'cpp', 'c', 'hpp' },
     settings = {
       rootMarkers = { ".git/" },
       languages = {
@@ -496,7 +512,9 @@ local servers = {
         },
         typescriptreact = {
           prettierformat
-        }
+        },
+        cpp = { cpplint },
+        c = { cpplint },
       }
     }
   },
