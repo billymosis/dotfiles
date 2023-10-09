@@ -35,6 +35,8 @@ alias start='~/my.sh'
 alias cpcl='xclip -sel clip'
 alias restore-directory='find . -type d -exec chmod 755 {} \;'
 alias restore-file='find . -type f -exec chmod 644 {} \;'
+alias d1='cd ~/Documents'
+alias g1='cd ~/Documents/game'
 
 source $HOME/.cargo/env 2> /dev/null
 source $ZSH/oh-my-zsh.sh
