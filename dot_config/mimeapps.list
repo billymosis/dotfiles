@@ -23,3 +23,4 @@ application/pdf=libreoffice-draw.desktop;
 image/jpeg=com.github.maoschanz.drawing.desktop;pix.desktop;
 application/x-mozilla-bookmarks=xed.desktop;
 application/octet-stream=org.gnome.FileRoller.desktop;
+application/x-cd-image=gnome-disk-image-writer.desktop;

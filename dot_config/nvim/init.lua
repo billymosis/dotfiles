@@ -69,6 +69,13 @@ require('lazy').setup({
     priority = 1000,
     config = function()
       vim.cmd.colorscheme 'onedark'
+      require('onedark').setup(
+        {
+          lualine = {
+            transparent = true, -- lualine center bar transparency
+          },
+        }
+      )
     end,
   },
 
@@ -76,7 +83,7 @@ require('lazy').setup({
     'nvim-lualine/lualine.nvim',
     opts = {
       options = {
-        icons_enabled = false,
+        icons_enabled = true,
         theme = 'onedark',
         component_separators = '|',
         section_separators = '',
@@ -85,10 +92,28 @@ require('lazy').setup({
       sections = {
         lualine_a = { 'mode' },
         lualine_b = { 'branch', 'diff', 'diagnostics' },
-        lualine_x = { { 'filename', path = 1 } },
+        lualine_c = { { 'filename', path = 2 } },
+        lualine_x = {},
         lualine_y = { 'progress' },
         lualine_z = { 'location' }
       },
+      winbar = {
+        lualine_a = {},
+        lualine_b = {},
+        lualine_c = { { 'filename', color = { fg = '#61afef', bg = 'none', gui = 'italic,bold' } } },
+        lualine_x = {},
+        lualine_y = {},
+        lualine_z = {}
+      },
+
+      inactive_winbar = {
+        lualine_a = {},
+        lualine_b = {},
+        lualine_c = { { 'filename', color = { fg = 'gray', bg = 'none', gui = 'italic,bold' } } },
+        lualine_x = {},
+        lualine_y = {},
+        lualine_z = {}
+      }
     },
   },
 
@@ -134,12 +159,8 @@ require('lazy').setup({
     },
     build = ':TSUpdate',
   },
-
   {
     'kyazdani42/nvim-tree.lua',
-    requires = {
-      'kyazdani42/nvim-web-devicons', -- optional, for file icon
-    }
   },
   { 'windwp/nvim-autopairs' },
   { 'windwp/nvim-ts-autotag' },
@@ -251,6 +272,7 @@ vim.o.completeopt = 'menuone,noselect'
 vim.o.termguicolors = true
 
 vim.o.relativenumber = true
+
 
 -- [[ Basic Keymaps ]]
 
@@ -639,4 +661,5 @@ highlight NonText guibg=none
 highlight Normal ctermbg=none
 highlight NonText ctermbg=none
 highlight EndOfBuffer guibg=NONE ctermbg=NONE
+highlight clear SignColumn
 ]])
