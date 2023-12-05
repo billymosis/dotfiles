@@ -1,5 +1,6 @@
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
+vim.g.skip_ts_context_commentstring_module = true
 
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
 if not vim.loop.fs_stat(lazypath) then
@@ -172,11 +173,6 @@ require('lazy').setup({
       require("zk").setup()
     end
   },
-  {
-    'creativenull/efmls-configs-nvim',
-    version = 'v1.x.x', -- version is optional, but recommended
-    dependencies = { 'neovim/nvim-lspconfig' },
-  }
 }, {})
 
 require('nvim-autopairs').setup()
