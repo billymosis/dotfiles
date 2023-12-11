@@ -1,0 +1,27 @@
+# /home/bimo/.config/tmuxinator/FE.yml
+
+name: FE
+root: ~/
+
+windows:
+  - editor: 
+      root: ~/work/fms-frontend/
+      panes:
+        - v
+  - server:
+      layout: main-vertical
+      panes:
+        - seirios-ros:
+          - cd ~/work/seirios-ros-configs/
+          - docker compose down
+          - docker compose up
+        - simulation:
+          - xhost +local:docker
+          - cd ~/personal/noetic-turtlebot3
+          - ./run.sh
+        - FE:
+          - cd ~/work/fms-frontend/
+          - npm run dev
+        - rns-plugin:
+          - cd ~/work/rns-plugin/
+          - ./run.sh

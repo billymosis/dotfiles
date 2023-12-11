@@ -1,0 +1,16 @@
+# /home/bimo/.config/tmuxinator/BE.yml
+
+name: BE
+root: ~/
+
+windows:
+  - server:
+      root: ~/work/fms-backend/
+      layout: main-vertical
+      panes:
+        - django:
+          - docker compose down
+          - docker compose up -d
+          - poetry run ./manage.py runserver
+        - consumer:
+          - poetry run ./manage.py robot_async_workers
