@@ -13,4 +13,4 @@ windows:
           - docker compose up -d
           - poetry run ./manage.py runserver
         - consumer:
-          - poetry run ./manage.py robot_async_workers
+          - poetry run ./manage.py command -c robot.robot_async_workers

@@ -1,0 +1,16 @@
+# /home/bimo/.config/tmuxinator/FEX.yml
+
+name: FEX
+root: ~/
+
+windows:
+  - editor: 
+      root: ~/work/fms-frontend/
+      panes:
+        - v
+  - server:
+      layout: main-vertical
+      panes:
+        - FE:
+          - cd ~/work/fms-frontend/
+          - npm run dev

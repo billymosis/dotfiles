@@ -2,6 +2,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 vim.g.skip_ts_context_commentstring_module = true
 
+
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
 if not vim.loop.fs_stat(lazypath) then
   vim.fn.system {
@@ -35,6 +36,7 @@ require('lazy').setup({
       'L3MON4D3/LuaSnip',
       'saadparwaiz1/cmp_luasnip',
       'hrsh7th/cmp-nvim-lsp',
+      'hrsh7th/cmp-path',
       'rafamadriz/friendly-snippets',
     },
   },
@@ -50,17 +52,45 @@ require('lazy').setup({
         changedelete = { text = '~' },
       },
       on_attach = function(bufnr)
-        local gs = require('gitsigns')
-        vim.keymap.set('n', '<leader>gp', gs.prev_hunk,
-          { buffer = bufnr, desc = '[G]o to [P]revious Hunk' })
-        vim.keymap.set('n', '<leader>gn', gs.next_hunk, { buffer = bufnr, desc = '[G]o to [N]ext Hunk' })
-        vim.keymap.set('n', '<leader>hp', gs.preview_hunk, { buffer = bufnr, desc = '[P]review [H]unk' })
-        vim.keymap.set({ 'n', 'v' }, '<leader>hs', ':Gitsigns stage_hunk<CR>', { buffer = bufnr, desc = 'Stage Hunk' })
-        vim.keymap.set({ 'n', 'v' }, '<leader>hr', ':Gitsigns reset_hunk<CR>', { buffer = bufnr, desc = 'Reset Hunk' })
-        vim.keymap.set('n', '<leader>hD', function() gs.diffthis('~') end, { buffer = bufnr, desc = 'Diff this' })
-        vim.keymap.set('n', '<leader>hb', function() gs.blame_line { full = true } end,
-          { buffer = bufnr, desc = 'blame line' })
-        vim.keymap.set('n', '<leader>hB', gs.toggle_current_line_blame, { buffer = bufnr, desc = 'toggle current line' })
+        local gs = package.loaded.gitsigns
+
+        local function map(mode, l, r, opts)
+          opts = opts or {}
+          opts.buffer = bufnr
+          vim.keymap.set(mode, l, r, opts)
+        end
+        -- Navigation
+        map('n', ']c', function()
+          if vim.wo.diff then return ']c' end
+          vim.schedule(function() gs.next_hunk() end)
+          return '<Ignore>'
+        end, { expr = true, desc = "Navigate to the next hunk" })
+
+        map('n', '[c', function()
+          if vim.wo.diff then return '[c' end
+          vim.schedule(function() gs.prev_hunk() end)
+          return '<Ignore>'
+        end, { expr = true, desc = "Navigate to the previous hunk" })
+
+        -- Actions
+        map('n', '<leader>hs', gs.stage_hunk, { desc = "Stage the current hunk" })
+        map('n', '<leader>hr', gs.reset_hunk, { desc = "Reset the current hunk" })
+        map('v', '<leader>hs', function() gs.stage_hunk { vim.fn.line('.'), vim.fn.line('v') } end,
+          { desc = "Stage visually selected lines" })
+        map('v', '<leader>hr', function() gs.reset_hunk { vim.fn.line('.'), vim.fn.line('v') } end,
+          { desc = "Reset visually selected lines" })
+        map('n', '<leader>hS', gs.stage_buffer, { desc = "Stage the entire buffer" })
+        map('n', '<leader>hu', gs.undo_stage_hunk, { desc = "Undo staging for the current hunk" })
+        map('n', '<leader>hR', gs.reset_buffer, { desc = "Reset the entire buffer" })
+        map('n', '<leader>hp', gs.preview_hunk, { desc = "Preview the current hunk" })
+        map('n', '<leader>hb', function() gs.blame_line { full = true } end, { desc = "Blame the current line" })
+        map('n', '<leader>tb', gs.toggle_current_line_blame, { desc = "Toggle blame for the current line" })
+        map('n', '<leader>hd', gs.diffthis, { desc = "Diff the current hunk" })
+        map('n', '<leader>hD', function() gs.diffthis('~') end, { desc = "Diff the current hunk against its base" })
+        map('n', '<leader>td', gs.toggle_deleted, { desc = "Toggle visibility of deleted lines" })
+
+        -- Text object
+        map({ 'o', 'x' }, 'ih', ':<C-U>Gitsigns select_hunk<CR>', { desc = "Select the current hunk" })
       end,
     },
   },
@@ -173,10 +203,45 @@ require('lazy').setup({
       require("zk").setup()
     end
   },
+  {
+    'creativenull/efmls-configs-nvim',
+    dependencies = { 'neovim/nvim-lspconfig' },
+  },
+  {
+    'joerdav/templ.vim'
+  },
+  {
+    "michaelrommel/nvim-silicon",
+    lazy = true,
+    cmd = "Silicon",
+    config = function()
+      require("silicon").setup({
+        font = "JetBrainsMono NF=34;Noto Color Emoji=34",
+        output = function()
+          return "~/Pictures/Code" .. os.date("!%Y-%m-%dT%H-%M-%S") .. ".png"
+        end,
+        to_clipboard = true,
+        pad_horiz = 0,
+        pad_vert = 0,
+        line_offset = function(args)
+          return args.line1
+        end,
+        tab_width = 2,
+        window_title = function()
+          local full_path = vim.fn.expand("%:p")
+          local relative_path = vim.fn.fnamemodify(full_path, ":~:.")
+          local name = "Bimo | "
+          return name .. relative_path
+        end,
+      })
+    end
+  },
 }, {})
 
 require('nvim-autopairs').setup()
 require('nvim-ts-autotag').setup()
+
+vim.filetype.add({ extension = { templ = "templ" } })
 
 local HEIGHT_RATIO = 0.8
 local WIDTH_RATIO = 0.5
@@ -269,6 +334,10 @@ vim.o.termguicolors = true
 
 vim.o.relativenumber = true
 
+vim.o.foldmethod = 'expr'
+vim.o.foldexpr = 'nvim_treesitter#foldexpr()'
+vim.o.foldlevelstart = 99
+
 
 -- [[ Basic Keymaps ]]
 
@@ -307,6 +376,41 @@ require('telescope').setup {
 -- Enable telescope fzf native, if installed
 pcall(require('telescope').load_extension, 'fzf')
 
+-- Telescope live_grep in git root
+-- Function to find the git root directory based on the current buffer's path
+local function find_git_root()
+  -- Use the current buffer's path as the starting point for the git search
+  local current_file = vim.api.nvim_buf_get_name(0)
+  local current_dir
+  local cwd = vim.fn.getcwd()
+  -- If the buffer is not associated with a file, return nil
+  if current_file == '' then
+    current_dir = cwd
+  else
+    -- Extract the directory from the current file's path
+    current_dir = vim.fn.fnamemodify(current_file, ':h')
+  end
+
+  -- Find the Git root directory from the current file's path
+  local git_root = vim.fn.systemlist('git -C ' .. vim.fn.escape(current_dir, ' ') .. ' rev-parse --show-toplevel')[1]
+  if vim.v.shell_error ~= 0 then
+    print 'Not a git repository. Searching on current working directory'
+    return cwd
+  end
+  return git_root
+end
+
+-- Custom live_grep function to search in git root
+local function live_grep_git_root()
+  local git_root = find_git_root()
+  if git_root then
+    require('telescope.builtin').live_grep {
+      search_dirs = { git_root },
+    }
+  end
+end
+
+vim.api.nvim_create_user_command('LiveGrepGitRoot', live_grep_git_root, {})
 -- See `:help telescope.builtin`
 vim.keymap.set('n', '<leader>?', require('telescope.builtin').oldfiles, { desc = '[?] Find recently opened files' })
 vim.keymap.set('n', '<leader><space>', require('telescope.builtin').buffers, { desc = '[ ] Find existing buffers' })
@@ -318,11 +422,21 @@ vim.keymap.set('n', '<leader>/', function()
   })
 end, { desc = '[/] Fuzzily search in current buffer' })
 
+local function telescope_live_grep_open_files()
+  require('telescope.builtin').live_grep {
+    grep_open_files = true,
+    prompt_title = 'Live Grep in Open Files',
+  }
+end
+
+vim.keymap.set('n', '<leader>s/', telescope_live_grep_open_files, { desc = '[S]earch [/] in Open Files' })
+vim.keymap.set('n', '<leader>ss', require('telescope.builtin').builtin, { desc = '[S]earch [S]elect Telescope' })
 vim.keymap.set('n', '<leader>gf', require('telescope.builtin').git_files, { desc = 'Search [G]it [F]iles' })
 vim.keymap.set('n', '<leader>sf', require('telescope.builtin').find_files, { desc = '[S]earch [F]iles' })
 vim.keymap.set('n', '<leader>sh', require('telescope.builtin').help_tags, { desc = '[S]earch [H]elp' })
 vim.keymap.set('n', '<leader>sw', require('telescope.builtin').grep_string, { desc = '[S]earch current [W]ord' })
 vim.keymap.set('n', '<leader>sg', require('telescope.builtin').live_grep, { desc = '[S]earch by [G]rep' })
+vim.keymap.set('n', '<leader>sG', ':LiveGrepGitRoot<cr>', { desc = '[S]earch by [G]rep on Git Root' })
 vim.keymap.set('n', '<leader>sd', require('telescope.builtin').diagnostics, { desc = '[S]earch [D]iagnostics' })
 vim.keymap.set('n', '<leader>sr', require('telescope.builtin').resume, { desc = '[S]earch [R]resume' })
 
@@ -334,7 +448,7 @@ require('nvim-treesitter.configs').setup {
   ignore_install = {},
   -- Add languages to be installed here that you want installed for treesitter
   ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'tsx', 'typescript', 'vimdoc', 'vim', 'html', 'css',
-    'javascript', 'markdown' },
+    'javascript', 'markdown', 'astro', 'sql', 'htmldjango', 'templ' },
 
   -- Autoinstall languages that are not installed. Defaults to false (but you can change for yourself!)
   auto_install = false,
@@ -481,9 +595,11 @@ local cpplint = {
 --
 --  If you want to override the default filetypes that your language server will attach to you can
 --  define the property 'filetypes' to the map in question.
+
+local sqlformatter = require('efmls-configs.formatters.sql-formatter')
 local servers = {
   clangd = {},
-  -- gopls = {},
+  gopls = {},
   pyright = {},
   rust_analyzer = {},
   bashls = {},
@@ -493,11 +609,15 @@ local servers = {
       client.server_capabilities.documentFormattingProvider = false
       client.server_capabilities.documentRangeFormattingProvider = false
       on_attach(client, bufnr)
-    end
+    end,
   },
-  tailwindcss = {},
+  tailwindcss = {
+    filetypes = { "templ", "astro", "javascript", "typescript", "react" },
+    init_options = { userLanguages = { templ = "html" } },
+  },
   jsonls = {},
-  html = { filetypes = { 'html', 'twig', 'hbs' } },
+  html = { filetypes = { 'html', 'twig', 'hbs', 'templ' } },
+  htmx = { filetypes = { 'html', 'twig', 'hbs', 'templ' } },
   eslint = {
     -- Code Action auto fix all on save
     on_attach = function(client, bufnr)
@@ -510,13 +630,19 @@ local servers = {
   },
   omnisharp = {},
   efm = {
-    init_options = { documentFormatting = true },
-    filetypes = { 'python', 'javascript', 'typescript', 'typescriptreact', 'css', 'html', 'cpp', 'c', 'hpp' },
+    init_options = { documentFormatting = true, documentRangeFormatting = true, },
+    filetypes = { 'python', 'javascript', 'typescript', 'typescriptreact', 'css', 'html', 'cpp', 'c', 'hpp', 'sql' },
     settings = {
+      version = 2,
       rootMarkers = { ".git/" },
       languages = {
+        sql = {
+          {
+            sqlformatter
+          }
+        },
         python = {
-          { formatCommand = string.format('%s --no-color -q -', 'black'), formatStdin = true }
+          { { formatCommand = string.format('%s --no-color -q -', 'black'), formatStdin = true } }
         },
         javascript = {
           {
@@ -529,20 +655,20 @@ local servers = {
           }
         },
         typescriptreact = {
-          prettierformat
+          { prettierformat }
         },
-        cpp = { cpplint },
-        c = { cpplint },
+        cpp = { { cpplint } },
+        c = { { cpplint } },
       }
     }
   },
-
   lua_ls = {
     Lua = {
       workspace = { checkThirdParty = false },
       telemetry = { enable = false },
     },
   },
+  astro = {},
 }
 
 -- Setup neovim lua configuration
