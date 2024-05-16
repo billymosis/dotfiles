@@ -13,8 +13,8 @@ windows:
       panes:
         - seirios-ros:
           - cd ~/work/seirios-ros-configs/
-          - docker compose down
-          - docker compose up
+          - sleep 4
+          - ./run.sh
         - simulation:
           - xhost +local:docker
           - cd ~/personal/noetic-turtlebot3
@@ -24,4 +24,5 @@ windows:
           - npm run dev
         - rns-plugin:
           - cd ~/work/rns-plugin/
+          - sleep 8
           - ./run.sh
