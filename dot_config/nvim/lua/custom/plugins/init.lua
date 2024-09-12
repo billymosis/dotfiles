@@ -4,6 +4,24 @@
 -- See the kickstart.nvim README for more information
 return {
   {
+    'kawre/leetcode.nvim',
+    build = ':TSUpdate html',
+    dependencies = {
+      'nvim-telescope/telescope.nvim',
+      'nvim-lua/plenary.nvim', -- required by telescope
+      'MunifTanjim/nui.nvim',
+
+      -- optional
+      'nvim-treesitter/nvim-treesitter',
+      'nvim-tree/nvim-web-devicons',
+    },
+    opts = {
+      lang = 'typescript',
+      -- configuration goes here
+    },
+  },
+  { 'airblade/vim-rooter' },
+  {
     'alexghergh/nvim-tmux-navigation',
     config = function()
       -- TMUX
@@ -24,7 +42,7 @@ return {
   {
     'JoosepAlviste/nvim-ts-context-commentstring',
     config = function()
-      require('ts_context_commentstring').setup {}
+      require('ts_context_commentstring').setup { enable_autocmd = false }
       require('Comment').setup {
         pre_hook = require('ts_context_commentstring.integrations.comment_nvim').create_pre_hook(),
       }
@@ -33,7 +51,7 @@ return {
   {
     'mickael-menu/zk-nvim',
     config = function()
-      require('zk').setup()
+      require('zk').setup {}
     end,
   },
   {
@@ -81,6 +99,102 @@ return {
       ]]
     end,
   },
+  {
+    'nvim-lualine/lualine.nvim',
+    opts = {
+      options = {
+        icons_enabled = true,
+        theme = 'onedark',
+        component_separators = '|',
+        section_separators = '',
+        globalstatus = true,
+      },
+      sections = {
+        lualine_a = { 'mode' },
+        lualine_b = { 'branch', 'diff', 'diagnostics' },
+        lualine_c = { { 'filename', path = 2 } },
+        lualine_x = {},
+        lualine_y = { 'progress' },
+        lualine_z = { 'location' },
+      },
+      winbar = {
+        lualine_a = {},
+        lualine_b = {},
+        lualine_c = { { 'filename', color = { fg = '#61afef', bg = 'none', gui = 'italic,bold' } } },
+        lualine_x = {},
+        lualine_y = {},
+        lualine_z = {},
+      },
+
+      inactive_winbar = {
+        lualine_a = {},
+        lualine_b = {},
+        lualine_c = { { 'filename', color = { fg = 'gray', bg = 'none', gui = 'italic,bold' } } },
+        lualine_x = {},
+        lualine_y = {},
+        lualine_z = {},
+      },
+    },
+  },
+  {
+    's1n7ax/nvim-window-picker',
+    name = 'window-picker',
+    event = 'VeryLazy',
+    version = '2.*',
+    config = function()
+      require('window-picker').setup()
+    end,
+  },
+  {
+    'windwp/nvim-ts-autotag',
+    config = function()
+      require('nvim-ts-autotag').setup()
+    end,
+  },
+  {
+    'tpope/vim-fugitive',
+  },
+  {
+    'mistweaverco/kulala.nvim',
+    config = function()
+      vim.filetype.add {
+        extension = {
+          ['http'] = 'http',
+        },
+      }
+      local kulala = require 'kulala'
+      kulala.setup {
+        -- default_view, body or headers
+        default_view = 'body',
+        -- dev, test, prod, can be anything
+        -- see: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
+        default_env = 'dev',
+        -- enable/disable debug mode
+        debug = false,
+        -- default formatters for different content types
+        formatters = {
+          json = { 'jq', '.' },
+          xml = { 'xmllint', '--format', '-' },
+          html = { 'xmllint', '--format', '--html', '-' },
+        },
+        -- default icons
+        icons = {
+          inlay = {
+            loading = '⏳',
+            done = '✅ ',
+          },
+          lualine = '🐼',
+        },
+        -- additional cURL options
+        -- e.g. { "--insecure", "-A", "Mozilla/5.0" }
+        additional_curl_options = {},
+      }
+      vim.keymap.set('n', '<leader>pr', kulala.run, { desc = 'Send HTTP [R]equest' })
+      vim.keymap.set('n', '<leader>pt', kulala.toggle_view, { desc = '[T]oggle View headers/body' })
+      vim.keymap.set('n', '<leader>pe', kulala.set_selected_env, { desc = 'Select [E]nvironment' })
+    end,
+  },
+
   -- {
   --   'kyazdani42/nvim-tree.lua',
   --   config = function()

@@ -8,6 +8,11 @@ x-scheme-handler/unknown=google-chrome.desktop
 application/octet-stream=org.gnome.FileRoller.desktop
 x-scheme-handler/mailto=google-chrome.desktop
 x-scheme-handler/postman=Postman.desktop
+x-scheme-handler/discord-618471189722955807=discord-618471189722955807.desktop
+application/pdf=FoxitReader.desktop
+application/ppdf=FoxitReader.desktop
+application/xfdf=FoxitReader.desktop
+application/fdf=FoxitReader.desktop
 
 [Added Associations]
 image/svg+xml=xed.desktop;pix.desktop;

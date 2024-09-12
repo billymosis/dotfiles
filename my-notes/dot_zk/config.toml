@@ -43,7 +43,7 @@ note-detail = "{{filename-stem}}"
 recents = "--sort created- --created-after 'last two weeks'"
 
 [alias]
-ls = "zk edit -i $@"
+ls = "zk edit -i --sort=modified $@"
 n = 'zk new --title "$*"'
 
 # Edit this configuration file.

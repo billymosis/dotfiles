@@ -92,5 +92,22 @@ return {
         detached = vim.fn.has 'win32' == 0,
       },
     }
+    dap.adapters.cppdbg = {
+      id = 'cppdbg',
+      type = 'executable',
+      command = '/home/bimo/.vscode/extensions/ms-vscode.cpptools-1.21.6-linux-x64/debugAdapters/bin/OpenDebugAD7',
+    }
+    dap.configurations.cpp = {
+      {
+        name = 'Launch',
+        type = 'cppdbg',
+        request = 'launch',
+        program = function()
+          return vim.fn.input('Path to executable: ', vim.fn.getcwd() .. '/', 'file')
+        end,
+        cwd = '${workspaceFolder}',
+        args = {},
+      },
+    }
   end,
 }

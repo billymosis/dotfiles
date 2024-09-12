@@ -28,6 +28,7 @@ alias vf="fdfind --type f --hidden --exclude .git \
     --bind 'ctrl-/:change-preview-window(bottom:60%|hidden|),ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up' \
     | xargs nvim"
 alias lg="lazygit"
+alias lq="lazydocker"
 alias p="cd ~/personal/"
 alias q="cd ~/QuickScript/"
 alias q1="~/QuickScript/mysql.sh"
@@ -66,17 +67,9 @@ fi
 
 export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
 
-# pnpm
-export PNPM_HOME="/home/omegalord666/.local/share/pnpm"
-case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
-esac
-# pnpm end
-
-# export PYENV_ROOT="$HOME/.pyenv"
-# command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
-# eval "$(pyenv init -)"
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
 
 # fnm
 export PATH="/home/bimo/.local/share/fnm:$PATH"
@@ -89,3 +82,11 @@ eval "`fnm env`"
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 . "$HOME/.cargo/env"
+
+# pnpm
+export PNPM_HOME="/home/bimo/.local/share/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
