@@ -3,6 +3,7 @@
 --
 -- See the kickstart.nvim README for more information
 return {
+  'sindrets/diffview.nvim',
   {
     'kawre/leetcode.nvim',
     build = ':TSUpdate html',
@@ -154,46 +155,46 @@ return {
   {
     'tpope/vim-fugitive',
   },
-  {
-    'mistweaverco/kulala.nvim',
-    config = function()
-      vim.filetype.add {
-        extension = {
-          ['http'] = 'http',
-        },
-      }
-      local kulala = require 'kulala'
-      kulala.setup {
-        -- default_view, body or headers
-        default_view = 'body',
-        -- dev, test, prod, can be anything
-        -- see: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
-        default_env = 'dev',
-        -- enable/disable debug mode
-        debug = false,
-        -- default formatters for different content types
-        formatters = {
-          json = { 'jq', '.' },
-          xml = { 'xmllint', '--format', '-' },
-          html = { 'xmllint', '--format', '--html', '-' },
-        },
-        -- default icons
-        icons = {
-          inlay = {
-            loading = '⏳',
-            done = '✅ ',
-          },
-          lualine = '🐼',
-        },
-        -- additional cURL options
-        -- e.g. { "--insecure", "-A", "Mozilla/5.0" }
-        additional_curl_options = {},
-      }
-      vim.keymap.set('n', '<leader>pr', kulala.run, { desc = 'Send HTTP [R]equest' })
-      vim.keymap.set('n', '<leader>pt', kulala.toggle_view, { desc = '[T]oggle View headers/body' })
-      vim.keymap.set('n', '<leader>pe', kulala.set_selected_env, { desc = 'Select [E]nvironment' })
-    end,
-  },
+  -- {
+  --   'mistweaverco/kulala.nvim',
+  --   config = function()
+  --     vim.filetype.add {
+  --       extension = {
+  --         ['http'] = 'http',
+  --       },
+  --     }
+  --     local kulala = require 'kulala'
+  --     kulala.setup {
+  --       -- default_view, body or headers
+  --       default_view = 'body',
+  --       -- dev, test, prod, can be anything
+  --       -- see: https://learn.microsoft.com/en-us/aspnet/core/test/http-files?view=aspnetcore-8.0#environment-files
+  --       default_env = 'dev',
+  --       -- enable/disable debug mode
+  --       debug = false,
+  --       -- default formatters for different content types
+  --       formatters = {
+  --         json = { 'jq', '.' },
+  --         xml = { 'xmllint', '--format', '-' },
+  --         html = { 'xmllint', '--format', '--html', '-' },
+  --       },
+  --       -- default icons
+  --       icons = {
+  --         inlay = {
+  --           loading = '⏳',
+  --           done = '✅ ',
+  --         },
+  --         lualine = '🐼',
+  --       },
+  --       -- additional cURL options
+  --       -- e.g. { "--insecure", "-A", "Mozilla/5.0" }
+  --       additional_curl_options = {},
+  --     }
+  --     vim.keymap.set('n', '<leader>pr', kulala.run, { desc = 'Send HTTP [R]equest' })
+  --     vim.keymap.set('n', '<leader>pt', kulala.toggle_view, { desc = '[T]oggle View headers/body' })
+  --     vim.keymap.set('n', '<leader>pe', kulala.set_selected_env, { desc = 'Select [E]nvironment' })
+  --   end,
+  -- },
 
   -- {
   --   'kyazdani42/nvim-tree.lua',

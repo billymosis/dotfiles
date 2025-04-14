@@ -16,7 +16,7 @@ application/fdf=FoxitReader.desktop
 
 [Added Associations]
 image/svg+xml=xed.desktop;pix.desktop;
-image/png=com.github.maoschanz.drawing.desktop;pix.desktop;
+image/png=gimp.desktop;com.github.maoschanz.drawing.desktop;pix.desktop;
 text/csv=xed.desktop;
 application/vnd.ms-publisher=xed.desktop;
 text/html=xed.desktop;
@@ -25,7 +25,7 @@ application/sql=nvim.desktop;
 application/x-mswinurl=xed.desktop;
 application/x-shellscript=xed.desktop;
 application/pdf=libreoffice-draw.desktop;
-image/jpeg=com.github.maoschanz.drawing.desktop;pix.desktop;
+image/jpeg=gimp.desktop;com.github.maoschanz.drawing.desktop;pix.desktop;
 application/x-mozilla-bookmarks=xed.desktop;
 application/octet-stream=org.gnome.FileRoller.desktop;
 application/x-cd-image=gnome-disk-image-writer.desktop;
