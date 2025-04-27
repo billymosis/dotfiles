@@ -9,8 +9,8 @@ windows:
       layout: main-vertical
       panes:
         - django:
-          - docker compose down
-          - docker compose up -d
-          - poetry run ./manage.py runserver 0.0.0.0:8000
+            - docker compose down
+            - docker compose up -d
+            - poetry run ./manage.py runserver 0.0.0.0:8000
         - consumer:
-          - poetry run ./manage.py command -c robot.robot_async_workers
+            - poetry run ./manage.py command -c worker
