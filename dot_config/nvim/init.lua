@@ -554,7 +554,7 @@ require('lazy').setup({
       local servers = {
         -- clangd = {},
         -- gopls = {},
-        -- pyright = {},
+        pyright = {},
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
@@ -652,7 +652,7 @@ require('lazy').setup({
           -- Disable "format_on_save lsp_fallback" for languages that don't
           -- have a well standardized coding style. You can add additional
           -- languages here or re-enable it for the disabled ones.
-          local disable_filetypes = { sql = true }
+          local disable_filetypes = { sql = true, markdown = true, md = true }
           return {
             timeout_ms = 500,
             lsp_fallback = not disable_filetypes[vim.bo[bufnr].filetype],
@@ -676,13 +676,13 @@ require('lazy').setup({
           ['css'] = { 'prettier' },
           ['scss'] = { 'prettier' },
           ['less'] = { 'prettier' },
-          ['html'] = { 'prettier' },
+          -- ['html'] = { 'prettier' },
           ['json'] = { 'prettier' },
           ['jsonc'] = { 'prettier' },
           ['yaml'] = { 'prettier' },
-          ['markdown'] = { 'prettier' },
-          ['markdown.mdx'] = { 'prettier' },
-          ['md'] = { 'prettier' },
+          -- ['markdown'] = { 'prettier' },
+          -- ['markdown.mdx'] = { 'prettier' },
+          -- ['md'] = { 'prettier' },
           ['graphql'] = { 'prettier' },
           ['handlebars'] = { 'prettier' },
           ['*'] = { 'codespell' },
