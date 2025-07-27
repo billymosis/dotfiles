@@ -6,6 +6,7 @@ vim.g.maplocalleader = ' '
 
 vim.o.autochdir = true
 vim.g.root_spec = { 'cwd' }
+vim.g.rooter_patterns = { '.git', '.git/', '_darcs/', '.hg/', '.bzr/', '.svn/', 'Makefile', 'package.json', 'uv.lock' }
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = true
@@ -555,6 +556,7 @@ require('lazy').setup({
         -- clangd = {},
         -- gopls = {},
         pyright = {},
+        mypy = {},
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
@@ -588,7 +590,6 @@ require('lazy').setup({
           config.settings.python.analysis.stubPath = vim.fs.joinpath(vim.fn.stdpath 'data', 'lazy', 'python-type-stubs')
         end,
       }
-
       -- You can add other tools here that you want Mason to install
       -- for you, so that they are available from within Neovim.
       local ensure_installed = vim.tbl_keys(servers or {})
@@ -600,6 +601,12 @@ require('lazy').setup({
       require('mason-lspconfig').setup {
         ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
         automatic_installation = false,
+        automatic_enable = {
+          exclude = {
+            'pyright',
+            'eslint',
+          },
+        },
         handlers = {
           function(server_name)
             local server = servers[server_name] or {}
@@ -649,10 +656,13 @@ require('lazy').setup({
         -- log_level = vim.log.levels.DEBUG,
         notify_on_error = true,
         format_on_save = function(bufnr)
+          if vim.g.disable_autoformat or vim.b[bufnr].disable_autoformat then
+            return
+          end
           -- Disable "format_on_save lsp_fallback" for languages that don't
           -- have a well standardized coding style. You can add additional
           -- languages here or re-enable it for the disabled ones.
-          local disable_filetypes = { sql = true, markdown = true, md = true }
+          local disable_filetypes = { sql = true, markdown = true, md = true, yaml = true }
           return {
             timeout_ms = 500,
             lsp_fallback = not disable_filetypes[vim.bo[bufnr].filetype],
@@ -712,7 +722,7 @@ require('lazy').setup({
         -- Disable "format_on_save lsp_fallback" for languages that don't
         -- have a well standardized coding style. You can add additional
         -- languages here or re-enable it for the disabled ones.
-        local disable_filetypes = { c = true, cpp = true, go = true }
+        local disable_filetypes = { c = true, cpp = true, go = true, yaml = true, yml = true }
         if disable_filetypes[vim.bo[bufnr].filetype] then
           return nil
         else
@@ -984,3 +994,32 @@ vim.api.nvim_create_autocmd('FileType', {
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+
+local lspconfig = require 'lspconfig'
+local util = require 'lspconfig/util'
+
+lspconfig.tailwindcss.setup {
+  -- Add Django template filetypes
+  filetypes = {
+    'html',
+    'htmldjango', -- For Django template files
+    'django-html', -- Another common filetype for Django templates
+    -- Include other filetypes as needed, e.g., "javascript", "typescript", "vue", "svelte"
+  },
+  -- Define the root directory pattern to correctly find tailwind.config.js
+  root_dir = util.root_pattern('tailwind.config.js', 'tailwind.config.ts', 'postcss.config.js', 'postcss.config.ts', 'package.json', '.git'),
+  settings = {
+    tailwindCSS = {
+      -- Optional: Configure inclusion of languages if using other templating engines within Django
+      -- includeLanguages = {
+      --   elixir = "html-eex",
+      --   heex = "html-eex",
+      -- },
+    },
+  },
+}
+
+-- Optional: If you're also using the HTML LSP server, ensure it also recognizes Django templates
+lspconfig.html.setup {
+  filetypes = { 'html', 'htmldjango' },
+}
