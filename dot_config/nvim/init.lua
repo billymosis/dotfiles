@@ -656,17 +656,15 @@ require('lazy').setup({
         -- log_level = vim.log.levels.DEBUG,
         notify_on_error = true,
         format_on_save = function(bufnr)
+          print(vim.g.disable_autoformat)
+          if vim.g.disable_autoformat == false then
+            return {
+              timeout_ms = 500,
+            }
+          end
           if vim.g.disable_autoformat or vim.b[bufnr].disable_autoformat then
             return
           end
-          -- Disable "format_on_save lsp_fallback" for languages that don't
-          -- have a well standardized coding style. You can add additional
-          -- languages here or re-enable it for the disabled ones.
-          local disable_filetypes = { sql = true, markdown = true, md = true, yaml = true }
-          return {
-            timeout_ms = 500,
-            lsp_fallback = not disable_filetypes[vim.bo[bufnr].filetype],
-          }
         end,
         event = { 'BufWritePre' },
         cmd = { 'ConformInfo' },
@@ -718,20 +716,7 @@ require('lazy').setup({
     end,
     opts = {
       notify_on_error = false,
-      format_on_save = function(bufnr)
-        -- Disable "format_on_save lsp_fallback" for languages that don't
-        -- have a well standardized coding style. You can add additional
-        -- languages here or re-enable it for the disabled ones.
-        local disable_filetypes = { c = true, cpp = true, go = true, yaml = true, yml = true }
-        if disable_filetypes[vim.bo[bufnr].filetype] then
-          return nil
-        else
-          return {
-            timeout_ms = 500,
-            lsp_fallback = not disable_filetypes[vim.bo[bufnr].filetype],
-          }
-        end
-      end,
+      format_on_save = false,
       formatters_by_ft = {},
       default_format_opts = {
         lsp_format = 'fallback',
