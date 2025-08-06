@@ -1,6 +1,11 @@
 -- =============================================================================
 -- BASIC SETTINGS
 -- =============================================================================
+--
+local function command_exists(name)
+	local commands = vim.api.nvim_get_commands({})
+	return commands[name] ~= nil
+end
 
 -- UI Settings
 vim.o.number = true
@@ -31,9 +36,9 @@ vim.g.mapleader = " "
 -- SEARCH SETTINGS
 -- =============================================================================
 
-vim.opt.ignorecase = true
-vim.opt.smartcase = true
-vim.opt.hlsearch = true
+vim.o.smartcase = true
+vim.o.ignorecase = true
+vim.o.hlsearch = true
 
 -- Clear search highlights on Escape
 vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>")
@@ -51,19 +56,19 @@ end)
 -- =============================================================================
 
 -- Enable built-in LSP for common languages
-vim.lsp.enable({ "lua_ls", "pyright", "ts_ls", "gopls" })
+vim.lsp.enable({ "lua_ls", "pyright", "ts_ls", "gopls", "html" })
 
--- LSP completion setup
-vim.api.nvim_create_autocmd("LspAttach", {
-	callback = function(ev)
-		local client = vim.lsp.get_client_by_id(ev.data.client_id)
-		if client and client:supports_method("textDocument/completion") then
-			vim.cmd("set completeopt+=menuone,popup,fuzzy")
-			vim.lsp.completion.enable(true, client.id, ev.buf, { autotrigger = true })
-		end
-	end,
-})
-vim.cmd("set completeopt=noselect")
+-- LSP completion setup (Replaced by mini.completion)
+-- vim.api.nvim_create_autocmd("LspAttach", {
+-- 	callback = function(ev)
+-- 		local client = vim.lsp.get_client_by_id(ev.data.client_id)
+-- 		if client and client:supports_method("textDocument/completion") then
+-- 			vim.cmd("set completeopt+=menuone,popup,fuzzy")
+-- 			vim.lsp.completion.enable(true, client.id, ev.buf, { autotrigger = true })
+-- 		end
+-- 	end,
+-- })
+vim.cmd("set completeopt+=noselect,menuone,popup,fuzzy")
 
 -- =============================================================================
 -- PLUGIN MANAGEMENT
@@ -72,7 +77,10 @@ vim.cmd("set completeopt=noselect")
 vim.pack.add({
 	-- LSP and Language Support
 	{ src = "https://github.com/neovim/nvim-lspconfig" },
-	{ src = "https://github.com/nvim-treesitter/nvim-treesitter" },
+	{
+		src = "https://github.com/nvim-treesitter/nvim-treesitter",
+		version = "master"
+	},
 	{ src = "https://github.com/mason-org/mason.nvim" },
 	{ src = "https://github.com/tpope/vim-sleuth" },
 	{ src = "https://github.com/microsoft/python-type-stubs" },
@@ -83,7 +91,7 @@ vim.pack.add({
 	-- Navigation and Files
 	{ src = "https://github.com/alexghergh/nvim-tmux-navigation" },
 	{ src = "https://github.com/echasnovski/mini.pick" },
-	{ src = "https://github.com/echasnovski/mini.extra" },
+	{ src = "https://github.com/folke/snacks.nvim" },
 	{ src = "https://github.com/echasnovski/mini.files" },
 	{ src = "https://github.com/airblade/vim-rooter" },
 
@@ -97,6 +105,7 @@ vim.pack.add({
 	{ src = "https://github.com/echasnovski/mini.comment" },
 	{ src = "https://github.com/JoosepAlviste/nvim-ts-context-commentstring" },
 	{ src = "https://github.com/windwp/nvim-ts-autotag" },
+	{ src = "https://github.com/saghen/blink.cmp" },
 
 	-- Language Specific
 	{ src = "https://github.com/ray-x/go.nvim" },
@@ -108,6 +117,8 @@ vim.pack.add({
 	-- Utilities
 	{ src = "https://github.com/michaelrommel/nvim-silicon" },
 	{ src = "https://github.com/nvim-lualine/lualine.nvim" },
+	{ src = "https://github.com/echasnovski/mini.snippets" },
+	{ src = "https://github.com/rafamadriz/friendly-snippets" },
 
 	-- Theme
 	{ src = "https://github.com/navarasu/onedark.nvim" },
@@ -131,7 +142,7 @@ require("lualine").setup({
 		lualine_b = { "branch", "diff", "diagnostics" },
 		lualine_c = { { "filename", path = 3 } },
 		lualine_x = {},
-		lualine_y = { "lsp_status", "bo:filetype" },
+		lualine_y = { { "lsp_status", ignore_lsp = { "mini.snippets" } }, "bo:filetype" },
 		lualine_z = { "location" },
 	},
 	winbar = {
@@ -156,7 +167,7 @@ require("lualine").setup({
 -- Conform (Formatting)
 require("conform").setup({
 	formatters_by_ft = {
-		lua = { "stylua" },
+		lua = { "stylua", lsp_format = "fallback" },
 		go = { "goimports", "gofmt" },
 		python = function(bufnr)
 			if require("conform").get_formatter_info("ruff_format", bufnr).available then
@@ -189,6 +200,10 @@ require("conform").setup({
 require("nvim-treesitter.configs").setup({
 	auto_install = true,
 	highlight = {
+		enable = true,
+		additional_vim_regex_highlighting = false,
+	},
+	indent = {
 		enable = true,
 	},
 })
@@ -281,9 +296,14 @@ require("zk").setup({
 	},
 })
 
+-- HACK: Redeclare when sourcing
+if command_exists("Silicon") then
+	vim.api.nvim_del_user_command("Silicon")
+end
+
 -- Silicon (Code Screenshots)
-require("silicon").setup({
-	font = "JetBrainsMono NF=34;Noto Color Emoji=34",
+require("nvim-silicon").setup({
+	font = "JetBrainsMono NF=34",
 	output = function()
 		return "~/Pictures/Codes/" .. os.date("!%Y-%m-%dT%H-%M-%S") .. ".png"
 	end,
@@ -300,12 +320,35 @@ require("silicon").setup({
 		return "Bimo | " .. relative_path
 	end,
 })
+local Snacks = require("snacks")
+Snacks.setup({
+	picker = {
+		ui_select = true
+	}
+})
 
 -- Mini.nvim plugins
-require("mini.pick").setup()
-require("mini.extra").setup()
 require("mini.files").setup()
 require("mini.pairs").setup()
+local gen_loader = require('mini.snippets').gen_loader
+require('mini.snippets').setup(
+	{
+		snippets = {
+			gen_loader.from_file('~/.config/nvim/snippets/global.json'),
+			gen_loader.from_lang({
+				lang_patterns = {
+					tsx = { 'javascript/**/*.json' },
+				}
+			}),
+		},
+	}
+)
+local MiniSnippets = require("mini.snippets")
+local rhs = function()
+	MiniSnippets.expand()
+end
+vim.keymap.set('i', '<C-g><C-j>', rhs, { desc = 'Expand all' })
+MiniSnippets.start_lsp_server({ match = false })
 
 -- Comment setup with context awareness
 require("ts_context_commentstring").setup({
@@ -375,12 +418,38 @@ vim.keymap.set("n", "<leader>lf", function()
 	require("conform").format({ async = true })
 end, { desc = "Format buffer" })
 
--- Search and Navigation
-vim.keymap.set("n", "<leader>sh", ":Pick help<CR>", { desc = "[S]earch [H]elp" })
-vim.keymap.set("n", "<leader>sk", ":Pick keymaps<CR>", { desc = "[S]earch [K]eymaps" })
-vim.keymap.set("n", "<leader>sf", ":Pick files<CR>", { desc = "[S]earch [F]iles" })
-vim.keymap.set("n", "<leader>sg", ":Pick grep_live<CR>", { desc = "[S]earch by [G]rep" })
-vim.keymap.set("n", "<leader>sd", ":Pick diagnostic<CR>", { desc = "[S]earch [D]iagnostics" })
-vim.keymap.set("n", "<leader>sr", ":Pick resume<CR>", { desc = "[S]earch [R]esume" })
-vim.keymap.set("n", "<leader>s.", ":Pick oldfiles<CR>", { desc = '[S]earch Recent Files ("." for repeat)' })
-vim.keymap.set("n", "<leader><leader>", ":Pick buffers<CR>", { desc = "Open Buffer" })
+
+-- Search Keymaps
+vim.keymap.set("n", "<leader>sk", function()
+	Snacks.picker.keymaps()
+end, { desc = "[S]earch [K]eymaps" })
+
+-- Search Files
+vim.keymap.set("n", "<leader>sf", function()
+	Snacks.picker.files()
+end, { desc = "[S]earch [F]iles" })
+
+-- Search by Grep
+vim.keymap.set("n", "<leader>sg", function()
+	Snacks.picker.grep()
+end, { desc = "[S]earch by [G]rep" })
+
+-- Search Diagnostics
+vim.keymap.set("n", "<leader>sd", function()
+	Snacks.picker.diagnostics()
+end, { desc = "[S]earch [D]iagnostics" })
+
+-- Search Resume
+vim.keymap.set("n", "<leader>sr", function()
+	Snacks.picker.resume()
+end, { desc = "[S]earch [R]esume" })
+
+-- Search Recent Files
+vim.keymap.set("n", "<leader>s.", function()
+	Snacks.picker.recent()
+end, { desc = '[S]earch Recent Files ("." for repeat)' })
+
+-- Open Buffer
+vim.keymap.set("n", "<leader><leader>", function()
+	Snacks.picker.buffers()
+end, { desc = "Open Buffer" })
