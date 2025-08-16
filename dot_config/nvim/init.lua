@@ -79,7 +79,7 @@ vim.pack.add({
 	{ src = "https://github.com/neovim/nvim-lspconfig" },
 	{
 		src = "https://github.com/nvim-treesitter/nvim-treesitter",
-		version = "master"
+		version = "main",
 	},
 	{ src = "https://github.com/mason-org/mason.nvim" },
 	{ src = "https://github.com/tpope/vim-sleuth" },
@@ -90,7 +90,6 @@ vim.pack.add({
 
 	-- Navigation and Files
 	{ src = "https://github.com/alexghergh/nvim-tmux-navigation" },
-	{ src = "https://github.com/echasnovski/mini.pick" },
 	{ src = "https://github.com/folke/snacks.nvim" },
 	{ src = "https://github.com/echasnovski/mini.files" },
 	{ src = "https://github.com/airblade/vim-rooter" },
@@ -105,11 +104,7 @@ vim.pack.add({
 	{ src = "https://github.com/echasnovski/mini.comment" },
 	{ src = "https://github.com/JoosepAlviste/nvim-ts-context-commentstring" },
 	{ src = "https://github.com/windwp/nvim-ts-autotag" },
-	{ src = "https://github.com/saghen/blink.cmp" },
-
-	-- Language Specific
-	{ src = "https://github.com/ray-x/go.nvim" },
-	{ src = "https://github.com/ray-x/guihua.lua" },
+	{ src = "https://github.com/saghen/blink.cmp", version = vim.version.range("^1") },
 
 	-- Notes and Documentation
 	{ src = "https://github.com/mickael-menu/zk-nvim" },
@@ -117,8 +112,8 @@ vim.pack.add({
 	-- Utilities
 	{ src = "https://github.com/michaelrommel/nvim-silicon" },
 	{ src = "https://github.com/nvim-lualine/lualine.nvim" },
-	{ src = "https://github.com/echasnovski/mini.snippets" },
 	{ src = "https://github.com/rafamadriz/friendly-snippets" },
+	{ src = "https://github.com/folke/lazydev.nvim" },
 
 	-- Theme
 	{ src = "https://github.com/navarasu/onedark.nvim" },
@@ -141,26 +136,15 @@ require("lualine").setup({
 		lualine_a = { "mode" },
 		lualine_b = { "branch", "diff", "diagnostics" },
 		lualine_c = { { "filename", path = 3 } },
-		lualine_x = {},
 		lualine_y = { { "lsp_status", ignore_lsp = { "mini.snippets" } }, "bo:filetype" },
 		lualine_z = { "location" },
 	},
 	winbar = {
-		lualine_a = {},
-		lualine_b = {},
 		lualine_c = { { "filename", color = { fg = "#61afef", bg = "none", gui = "italic,bold" } } },
-		lualine_x = {},
-		lualine_y = {},
-		lualine_z = {},
 	},
 
 	inactive_winbar = {
-		lualine_a = {},
-		lualine_b = {},
 		lualine_c = { { "filename", color = { fg = "gray", bg = "none", gui = "italic,bold" } } },
-		lualine_x = {},
-		lualine_y = {},
-		lualine_z = {},
 	},
 })
 
@@ -195,29 +179,6 @@ require("conform").setup({
 		handlebars = { "prettier" },
 	},
 })
-
--- Treesitter
-require("nvim-treesitter.configs").setup({
-	auto_install = true,
-	highlight = {
-		enable = true,
-		additional_vim_regex_highlighting = false,
-	},
-	indent = {
-		enable = true,
-	},
-})
-
--- Go.nvim with auto-formatting
-local format_sync_grp = vim.api.nvim_create_augroup("GoFormat", {})
-vim.api.nvim_create_autocmd("BufWritePre", {
-	pattern = "*.go",
-	callback = function()
-		require("go.format").goimports()
-	end,
-	group = format_sync_grp,
-})
-require("go").setup()
 
 -- Gitsigns
 require("gitsigns").setup({
@@ -323,32 +284,13 @@ require("nvim-silicon").setup({
 local Snacks = require("snacks")
 Snacks.setup({
 	picker = {
-		ui_select = true
-	}
+		ui_select = true,
+	},
 })
 
 -- Mini.nvim plugins
 require("mini.files").setup()
 require("mini.pairs").setup()
-local gen_loader = require('mini.snippets').gen_loader
-require('mini.snippets').setup(
-	{
-		snippets = {
-			gen_loader.from_file('~/.config/nvim/snippets/global.json'),
-			gen_loader.from_lang({
-				lang_patterns = {
-					tsx = { 'javascript/**/*.json' },
-				}
-			}),
-		},
-	}
-)
-local MiniSnippets = require("mini.snippets")
-local rhs = function()
-	MiniSnippets.expand()
-end
-vim.keymap.set('i', '<C-g><C-j>', rhs, { desc = 'Expand all' })
-MiniSnippets.start_lsp_server({ match = false })
 
 -- Comment setup with context awareness
 require("ts_context_commentstring").setup({
@@ -387,18 +329,8 @@ require("nvim-tmux-navigation").setup({
 -- THEME AND APPEARANCE
 -- =============================================================================
 
-require("onedark").setup()
+require("onedark").setup({ transparent = true })
 vim.cmd.colorscheme("onedark")
-
--- Transparent background
-vim.cmd([[
-	highlight Normal guibg=none
-	highlight NonText guibg=none
-	highlight Normal ctermbg=none
-	highlight NonText ctermbg=none
-	highlight EndOfBuffer guibg=NONE ctermbg=NONE
-	highlight clear SignColumn
-]])
 
 -- =============================================================================
 -- KEYMAPS
@@ -417,7 +349,6 @@ vim.keymap.set("n", "<leader>e", minifiles_toggle, { desc = "Toggle mini files" 
 vim.keymap.set("n", "<leader>lf", function()
 	require("conform").format({ async = true })
 end, { desc = "Format buffer" })
-
 
 -- Search Keymaps
 vim.keymap.set("n", "<leader>sk", function()
@@ -453,3 +384,100 @@ end, { desc = '[S]earch Recent Files ("." for repeat)' })
 vim.keymap.set("n", "<leader><leader>", function()
 	Snacks.picker.buffers()
 end, { desc = "Open Buffer" })
+
+-- Code Action
+vim.keymap.set("n", "<leader>ca", function()
+	vim.lsp.buf.code_action({ apply = true })
+end, { desc = "[C]ode [A]ction" })
+
+local function setup_treesitter()
+	local autocmd = vim.api.nvim_create_autocmd
+	local ts_parsers = {
+		"bash",
+		"c",
+		"dockerfile",
+		"fish",
+		"git_config",
+		"git_rebase",
+		"gitattributes",
+		"gitcommit",
+		"gitignore",
+		"go",
+		"gomod",
+		"gosum",
+		"html",
+		"javascript",
+		"json",
+		"lua",
+		"make",
+		"markdown",
+		"python",
+		"rust",
+		"sql",
+		"toml",
+		"tsx",
+		"typescript",
+		"typescriptreact",
+		"typst",
+		"vim",
+		"yaml",
+		"zig",
+		"regex",
+	}
+	local nts = require("nvim-treesitter")
+	nts.install(ts_parsers)
+	autocmd("PackChanged", { -- update treesitter parsers/queries with plugin updates
+		group = augroup,
+		callback = function(args)
+			local spec = args.data.spec
+			if spec and spec.name == "nvim-treesitter" and args.data.kind == "update" then
+				vim.schedule(function()
+					nts.update()
+				end)
+			end
+		end,
+	})
+	autocmd("FileType", {
+		pattern = ts_parsers,
+		callback = function()
+			-- syntax highlighting, provided by Neovim
+			vim.treesitter.start()
+			-- folds, provided by Neovim
+			vim.wo.foldexpr = "v:lua.vim.treesitter.foldexpr()"
+			-- indentation, provided by nvim-treesitter
+			vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+		end,
+	})
+end
+setup_treesitter()
+
+require("blink.cmp").setup({
+	signature = { enabled = true },
+})
+
+require("lazydev").setup({
+	signature = { enabled = true },
+})
+
+-- Absolute path
+vim.keymap.set("n", "<leader>cF", function()
+	vim.fn.setreg("+", vim.fn.expand("%:p"))
+	print("Copied absolute path: " .. vim.fn.expand("%:p"))
+end, { desc = "Copy absolute file path" })
+
+-- Path relative to current working directory
+vim.keymap.set("n", "<leader>cr", function()
+	vim.fn.setreg("+", vim.fn.expand("%"))
+	print("Copied relative path: " .. vim.fn.expand("%"))
+end, { desc = "Copy file path relative to CWD" })
+
+-- Highlight when yanking (copying) text
+--  Try it with `yap` in normal mode
+--  See `:help vim.highlight.on_yank()`
+vim.api.nvim_create_autocmd("TextYankPost", {
+	desc = "Highlight when yanking (copying) text",
+	group = vim.api.nvim_create_augroup("kickstart-highlight-yank", { clear = true }),
+	callback = function()
+		vim.hl.on_yank()
+	end,
+})
