@@ -14,6 +14,7 @@ vim.o.signcolumn = "yes"
 vim.o.wrap = false
 vim.o.cursorline = true
 vim.o.winborder = "rounded"
+vim.o.cmdheight = 1
 
 -- Indentation
 vim.o.tabstop = 4
@@ -56,18 +57,7 @@ end)
 -- =============================================================================
 
 -- Enable built-in LSP for common languages
-vim.lsp.enable({ "lua_ls", "pyright", "ts_ls", "gopls", "html" })
-
--- LSP completion setup (Replaced by mini.completion)
--- vim.api.nvim_create_autocmd("LspAttach", {
--- 	callback = function(ev)
--- 		local client = vim.lsp.get_client_by_id(ev.data.client_id)
--- 		if client and client:supports_method("textDocument/completion") then
--- 			vim.cmd("set completeopt+=menuone,popup,fuzzy")
--- 			vim.lsp.completion.enable(true, client.id, ev.buf, { autotrigger = true })
--- 		end
--- 	end,
--- })
+vim.lsp.enable({ "lua_ls", "pyright", "ts_ls", "gopls", "html", "jdtls", "java" })
 vim.cmd("set completeopt+=noselect,menuone,popup,fuzzy")
 
 -- =============================================================================
@@ -84,6 +74,7 @@ vim.pack.add({
 	{ src = "https://github.com/mason-org/mason.nvim" },
 	{ src = "https://github.com/tpope/vim-sleuth" },
 	{ src = "https://github.com/microsoft/python-type-stubs" },
+	{ src = "https://github.com/ray-x/go.nvim" },
 
 	-- Formatting
 	{ src = "https://github.com/stevearc/conform.nvim" },
@@ -91,8 +82,10 @@ vim.pack.add({
 	-- Navigation and Files
 	{ src = "https://github.com/alexghergh/nvim-tmux-navigation" },
 	{ src = "https://github.com/folke/snacks.nvim" },
-	{ src = "https://github.com/echasnovski/mini.files" },
 	{ src = "https://github.com/airblade/vim-rooter" },
+	{ src = "https://github.com/nvim-neo-tree/neo-tree.nvim" },
+	{ src = "https://github.com/nvim-lua/plenary.nvim" },
+	{ src = "https://github.com/MunifTanjim/nui.nvim" },
 
 	-- Git Integration
 	{ src = "https://github.com/sindrets/diffview.nvim" },
@@ -117,6 +110,13 @@ vim.pack.add({
 
 	-- Theme
 	{ src = "https://github.com/navarasu/onedark.nvim" },
+
+	-- AI
+	-- { src = "https://github.com/github/copilot.vim" },
+	{ src = "https://github.com/zbirenbaum/copilot.lua" },
+	{ src = "https://github.com/olimorris/codecompanion.nvim" },
+	{ src = "https://github.com/ravitemer/codecompanion-history.nvim" },
+	{ src = "https://github.com/OXY2DEV/markview.nvim" },
 })
 
 -- =============================================================================
@@ -136,7 +136,8 @@ require("lualine").setup({
 		lualine_a = { "mode" },
 		lualine_b = { "branch", "diff", "diagnostics" },
 		lualine_c = { { "filename", path = 3 } },
-		lualine_y = { { "lsp_status", ignore_lsp = { "mini.snippets" } }, "bo:filetype" },
+		lualine_x = {},
+		lualine_y = { { "lsp_status", ignore_lsp = { "mini.snippets", "Copilot", "GitHub Copilot" } }, "bo:filetype" },
 		lualine_z = { "location" },
 	},
 	winbar = {
@@ -289,7 +290,6 @@ Snacks.setup({
 })
 
 -- Mini.nvim plugins
-require("mini.files").setup()
 require("mini.pairs").setup()
 
 -- Comment setup with context awareness
@@ -336,15 +336,6 @@ vim.cmd.colorscheme("onedark")
 -- KEYMAPS
 -- =============================================================================
 
--- File Management
-local MiniFiles = require("mini.files")
-local minifiles_toggle = function()
-	if not MiniFiles.close() then
-		MiniFiles.open(vim.api.nvim_buf_get_name(0))
-	end
-end
-vim.keymap.set("n", "<leader>e", minifiles_toggle, { desc = "Toggle mini files" })
-
 -- Formatting
 vim.keymap.set("n", "<leader>lf", function()
 	require("conform").format({ async = true })
@@ -353,6 +344,11 @@ end, { desc = "Format buffer" })
 -- Search Keymaps
 vim.keymap.set("n", "<leader>sk", function()
 	Snacks.picker.keymaps()
+end, { desc = "[S]earch [K]eymaps" })
+
+-- Jumps
+vim.keymap.set("n", "<leader>sj", function()
+	Snacks.picker.jumps()
 end, { desc = "[S]earch [K]eymaps" })
 
 -- Search Files
@@ -385,11 +381,6 @@ vim.keymap.set("n", "<leader><leader>", function()
 	Snacks.picker.buffers()
 end, { desc = "Open Buffer" })
 
--- Code Action
-vim.keymap.set("n", "<leader>ca", function()
-	vim.lsp.buf.code_action({ apply = true })
-end, { desc = "[C]ode [A]ction" })
-
 local function setup_treesitter()
 	local autocmd = vim.api.nvim_create_autocmd
 	local ts_parsers = {
@@ -411,6 +402,7 @@ local function setup_treesitter()
 		"lua",
 		"make",
 		"markdown",
+		"markdown_inline",
 		"python",
 		"rust",
 		"sql",
@@ -453,6 +445,13 @@ setup_treesitter()
 
 require("blink.cmp").setup({
 	signature = { enabled = true },
+	completion = {
+		menu = {
+			draw = {
+				columns = { { "label", "label_description", gap = 1 }, { "kind" } },
+			},
+		},
+	},
 })
 
 require("lazydev").setup({
@@ -481,3 +480,232 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 		vim.hl.on_yank()
 	end,
 })
+
+vim.keymap.set("n", "<Leader>cr", function()
+	vim.cmd("%s/\\r$//g")
+	print("CRLF line endings converted to LF")
+end, { desc = "Convert CRLF to LF in whole buffer" })
+
+require("neo-tree").setup({
+	filesystem = {
+		follow_current_file = {
+			enabled = true,
+			leave_dirs_open = true,
+		},
+		window = {
+			mappings = {
+				["<leader>e"] = "close_window",
+				["h"] = function(state)
+					local node = state.tree:get_node()
+					if node.type == "directory" and node:is_expanded() then
+						require("neo-tree.sources.filesystem").toggle_directory(state, node)
+					else
+						require("neo-tree.ui.renderer").focus_node(state, node:get_parent_id())
+					end
+				end,
+				["O"] = function(state)
+					local node = state.tree:get_node()
+					local path = node:get_id()
+					-- macOs: open file in default application in the background.
+					vim.fn.jobstart({ "xdg-open", "-g", path }, { detach = true })
+					-- Linux: open file in default application
+					vim.fn.jobstart({ "xdg-open", path }, { detach = true })
+				end,
+				["l"] = function(state)
+					local node = state.tree:get_node()
+					if node.type == "directory" then
+						if not node:is_expanded() then
+							require("neo-tree.sources.filesystem").toggle_directory(state, node)
+						elseif node:has_children() then
+							require("neo-tree.ui.renderer").focus_node(state, node:get_child_ids()[1])
+						end
+					end
+				end,
+			},
+		},
+	}, -- options go here
+})
+
+-- File Management
+vim.keymap.set("n", "<leader>e", ":Neotree toggle float reveal<CR>", { desc = "NeoTree toggle" })
+vim.keymap.set("n", "<leader>lq", ":Neotree float git_status<CR>", { desc = "NeoTree git" })
+
+local map = function(keys, func, desc)
+	vim.keymap.set("n", keys, func, { desc = "LSP: " .. desc })
+end
+
+-- Code Action
+vim.keymap.set("n", "<leader>ca", function()
+	vim.lsp.buf.code_action({ apply = true })
+end, { desc = "[C]ode [A]ction" })
+
+map("gd", function()
+	require("snacks").picker.lsp_definitions()
+end, "[G]oto [D]efinition")
+-- Find references for the word under your cursor.
+map("gr", function()
+	require("snacks").picker.lsp_references()
+end, "[G]oto [R]eferences")
+
+-- Jump to the implementation of the word under your cursor.
+-- Useful when your language has ways of declaring types without an actual implementation.
+map("gI", function()
+	require("snacks").picker.lsp_implementations()
+end, "[G]oto [I]mplementation")
+
+-- Jump to the type of the word under your cursor.
+-- Useful when you're not sure what type a variable is and you want to see
+-- the definition of its *type*, not where it was *defined*.
+map("gy", function()
+	require("snacks").picker.lsp_type_definitions()
+end, "Goto T[y]pe Definition")
+
+map("gD", function()
+	require("snacks").picker.lsp_declarations()
+end, "[G]oto [D]eclaration")
+
+-- Code companion
+require("codecompanion").setup({
+	opts = {
+		log_level = "DEBUG", -- or "TRACE"
+	},
+	extensions = {
+		history = {
+			enabled = true,
+			opts = {
+				-- Keymap to open history from chat buffer (default: gh)
+				keymap = "gh",
+				-- Keymap to save the current chat manually (when auto_save is disabled)
+				save_chat_keymap = "sc",
+				-- Save all chats by default (disable to save only manually using 'sc')
+				auto_save = true,
+				-- Number of days after which chats are automatically deleted (0 to disable)
+				expiration_days = 0,
+				-- Picker interface (auto resolved to a valid picker)
+				picker = "snacks", --- ("telescope", "snacks", "fzf-lua", or "default")
+				---Optional filter function to control which chats are shown when browsing
+				chat_filter = nil, -- function(chat_data) return boolean end
+				-- Customize picker keymaps (optional)
+				picker_keymaps = {
+					rename = { n = "r", i = "<M-r>" },
+					delete = { n = "d", i = "<M-d>" },
+					duplicate = { n = "<C-y>", i = "<C-y>" },
+				},
+				---Automatically generate titles for new chats
+				auto_generate_title = true,
+				title_generation_opts = {
+					---Adapter for generating titles (defaults to current chat adapter)
+					adapter = "copilot", -- "copilot"
+					---Model for generating titles (defaults to current chat model)
+					model = "gpt-4o", -- "gpt-4o"
+					---Number of user prompts after which to refresh the title (0 to disable)
+					refresh_every_n_prompts = 0, -- e.g., 3 to refresh after every 3rd user prompt
+					---Maximum number of times to refresh the title (default: 3)
+					max_refreshes = 3,
+					format_title = function(original_title)
+						-- this can be a custom function that applies some custom
+						-- formatting to the title.
+						return original_title
+					end,
+				},
+				---On exiting and entering neovim, loads the last chat on opening chat
+				continue_last_chat = false,
+				---When chat is cleared with `gx` delete the chat from history
+				delete_on_clearing_chat = false,
+				---Directory path to save the chats
+				dir_to_save = vim.fn.stdpath("data") .. "/codecompanion-history",
+				---Enable detailed logging for history extension
+				enable_logging = false,
+
+				-- Summary system
+				summary = {
+					-- Keymap to generate summary for current chat (default: "gcs")
+					create_summary_keymap = "gcs",
+					-- Keymap to browse summaries (default: "gbs")
+					browse_summaries_keymap = "gbs",
+
+					generation_opts = {
+						adapter = "copilot", -- defaults to current chat adapter
+						model = "gpt-4o", -- defaults to current chat model
+						context_size = 90000, -- max tokens that the model supports
+						include_references = true, -- include slash command content
+						include_tool_outputs = true, -- include tool execution results
+						system_prompt = nil, -- custom system prompt (string or function)
+						format_summary = nil, -- custom function to format generated summary e.g to remove <think/> tags from summary
+					},
+				},
+			},
+		},
+	},
+})
+
+-- set filetype for codecompanion buffer
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = "codecompanion",
+	callback = function()
+		vim.bo.filetype = "markdown"
+	end,
+})
+-- vim.keymap.set({ "n", "v" }, "<C-a>", "<cmd>CodeCompanionActions<cr>", { noremap = true, silent = true })
+vim.keymap.set({ "n", "v" }, "<leader>a", "<cmd>CodeCompanionChat Toggle<cr>", { noremap = true, silent = true })
+vim.keymap.set("v", "ga", "<cmd>CodeCompanionChat Add<cr>", { noremap = true, silent = true })
+
+-- Expand 'cc' into 'CodeCompanion' in the command line
+vim.cmd([[cab cc CodeCompanion]])
+require("markview").setup({
+	preview = {
+		filetypes = { "markdown", "codecompanion" },
+		ignore_buftypes = {},
+	},
+})
+
+vim.api.nvim_set_hl(0, "CopilotSuggestion", { italic = true, fg = "#555555" })
+require("copilot").setup()
+
+vim.keymap.set("n", "<leader>w", function()
+	local opts = {
+		{
+			name = "Code Companion Action",
+			action = function()
+				vim.cmd("CodeCompanionActions")
+			end,
+		},
+		{
+			name = "Toggle copilot auto trigger",
+			action = function()
+				require("copilot.suggestion").toggle_auto_trigger()
+			end,
+		},
+		{
+			name = "Copilot panel",
+			action = function()
+				vim.cmd("Copilot panel")
+			end,
+		},
+		{
+			name = "Toggle Relative Number",
+			action = function()
+				vim.o.relativenumber = not vim.o.relativenumber
+			end,
+		},
+		{
+			name = "Toggle Wrap",
+			action = function()
+				vim.o.wrap = not vim.o.wrap
+			end,
+		},
+	}
+	-- Implementation for vim.ui.select
+	vim.ui.select(opts, {
+		prompt = "Settings and Options",
+		format_item = function(item)
+			return item.name
+		end,
+	}, function(item)
+		if item then
+			item.action()
+		else
+			print("No option selected")
+		end
+	end)
+end, { desc = "[S]ettings [O]ptions" })
