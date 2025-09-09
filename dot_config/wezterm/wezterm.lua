@@ -7,7 +7,7 @@ local config = {}
 -- In newer versions of wezterm, use the config_builder which will
 -- help provide clearer error messages
 if wezterm.config_builder then
-  config = wezterm.config_builder()
+	config = wezterm.config_builder()
 end
 
 -- This is where you actually apply your config choices
@@ -20,6 +20,16 @@ config.window_background_opacity = 0.85
 -- config.window_decorations = "RESIZE"
 -- config.front_end = "OpenGL"
 
+config.window_padding = {
+	left = 0,
+	right = 0,
+	top = 0,
+	bottom = 0,
+}
+
+-- Spawn a fish shell in login mode do this if in windows zsh or bash in linux
+config.default_prog = { "pwsh.exe" }
+config.font = wezterm.font("JetBrainsMono Nerd Font")
+
 -- and finally, return the configuration to wezterm
 return config
-

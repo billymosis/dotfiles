@@ -137,7 +137,10 @@ require("lualine").setup({
 		lualine_b = { "branch", "diff", "diagnostics" },
 		lualine_c = { { "filename", path = 3 } },
 		lualine_x = {},
-		lualine_y = { { "lsp_status", ignore_lsp = { "mini.snippets", "Copilot", "GitHub Copilot" } }, "bo:filetype" },
+		lualine_y = {
+			{ "lsp_status", ignore_lsp = { "mini.snippets", "Copilot", "GitHub Copilot", "copilot" } },
+			"bo:filetype",
+		},
 		lualine_z = { "location" },
 	},
 	winbar = {
@@ -418,6 +421,7 @@ local function setup_treesitter()
 	}
 	local nts = require("nvim-treesitter")
 	nts.install(ts_parsers)
+	local augroup = vim.api.nvim_create_augroup("TreesitterUpdates", { clear = true }) -- define augroup
 	autocmd("PackChanged", { -- update treesitter parsers/queries with plugin updates
 		group = augroup,
 		callback = function(args)
@@ -429,8 +433,12 @@ local function setup_treesitter()
 			end
 		end,
 	})
+
+	local highlight_filetypes = vim.deepcopy(ts_parsers)
+	table.insert(highlight_filetypes, "codecompanion")
+
 	autocmd("FileType", {
-		pattern = ts_parsers,
+		pattern = highlight_filetypes,
 		callback = function()
 			-- syntax highlighting, provided by Neovim
 			vim.treesitter.start()
@@ -450,6 +458,9 @@ require("blink.cmp").setup({
 			draw = {
 				columns = { { "label", "label_description", gap = 1 }, { "kind" } },
 			},
+		},
+		documentation = {
+			auto_show = true,
 		},
 	},
 })
@@ -639,13 +650,6 @@ require("codecompanion").setup({
 	},
 })
 
--- set filetype for codecompanion buffer
-vim.api.nvim_create_autocmd("FileType", {
-	pattern = "codecompanion",
-	callback = function()
-		vim.bo.filetype = "markdown"
-	end,
-})
 -- vim.keymap.set({ "n", "v" }, "<C-a>", "<cmd>CodeCompanionActions<cr>", { noremap = true, silent = true })
 vim.keymap.set({ "n", "v" }, "<leader>a", "<cmd>CodeCompanionChat Toggle<cr>", { noremap = true, silent = true })
 vim.keymap.set("v", "ga", "<cmd>CodeCompanionChat Add<cr>", { noremap = true, silent = true })
@@ -660,14 +664,30 @@ require("markview").setup({
 })
 
 vim.api.nvim_set_hl(0, "CopilotSuggestion", { italic = true, fg = "#555555" })
-require("copilot").setup()
+require("copilot").setup({
+	server_opts_overrides = {
+		settings = {
+			telemetry = {
+				telemetryLevel = "off",
+			},
+		},
+	},
+})
 
-vim.keymap.set("n", "<leader>w", function()
+vim.keymap.set({ "n", "v" }, "<leader>w", function()
+	local mode = vim.fn.mode()
 	local opts = {
 		{
 			name = "Code Companion Action",
 			action = function()
-				vim.cmd("CodeCompanionActions")
+				if mode == "v" or mode == "V" or mode == "\22" then -- visual, linewise, blockwise
+					-- Run command on selected lines
+					vim.cmd(string.format(":'<,'>CodeCompanionActions"))
+					-- Optionally, exit visual mode
+					vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "n", true)
+				else
+					vim.cmd("CodeCompanionActions")
+				end
 			end,
 		},
 		{
@@ -695,7 +715,6 @@ vim.keymap.set("n", "<leader>w", function()
 			end,
 		},
 	}
-	-- Implementation for vim.ui.select
 	vim.ui.select(opts, {
 		prompt = "Settings and Options",
 		format_item = function(item)
