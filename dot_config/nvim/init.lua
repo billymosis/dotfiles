@@ -74,7 +74,6 @@ vim.pack.add({
 	{ src = "https://github.com/mason-org/mason.nvim" },
 	{ src = "https://github.com/tpope/vim-sleuth" },
 	{ src = "https://github.com/microsoft/python-type-stubs" },
-	{ src = "https://github.com/ray-x/go.nvim" },
 
 	-- Formatting
 	{ src = "https://github.com/stevearc/conform.nvim" },
@@ -107,9 +106,12 @@ vim.pack.add({
 	{ src = "https://github.com/nvim-lualine/lualine.nvim" },
 	{ src = "https://github.com/rafamadriz/friendly-snippets" },
 	{ src = "https://github.com/folke/lazydev.nvim" },
+	{ src = "https://github.com/kwkarlwang/bufjump.nvim" },
 
 	-- Theme
 	{ src = "https://github.com/navarasu/onedark.nvim" },
+	{ src = "https://github.com/darianmorat/gruvdark.nvim" },
+	{ src = "https://github.com/rebelot/kanagawa.nvim" },
 
 	-- AI
 	-- { src = "https://github.com/github/copilot.vim" },
@@ -127,7 +129,7 @@ vim.pack.add({
 require("lualine").setup({
 	options = {
 		icons_enabled = true,
-		theme = "onedark",
+		-- theme = "onedark",
 		component_separators = "|",
 		section_separators = "",
 		globalstatus = true,
@@ -151,6 +153,7 @@ require("lualine").setup({
 		lualine_c = { { "filename", color = { fg = "gray", bg = "none", gui = "italic,bold" } } },
 	},
 })
+local prettierd = { "prettierd", "prettier", stop_after_first = true }
 
 -- Conform (Formatting)
 require("conform").setup({
@@ -164,23 +167,23 @@ require("conform").setup({
 				return { "isort", "black" }
 			end
 		end,
-		javascript = { "prettierd", "prettier", stop_after_first = true },
-		javascriptreact = { "prettierd", "prettier", stop_after_first = true },
-		typescript = { "prettierd", "prettier", stop_after_first = true },
-		typescriptreact = { "prettierd", "prettier", stop_after_first = true },
-		vue = { "prettier" },
-		css = { "prettier" },
-		scss = { "prettier" },
-		less = { "prettier" },
-		html = { "prettier" },
-		json = { "prettier" },
-		jsonc = { "prettier" },
-		yaml = { "prettier" },
-		markdown = { "prettier" },
-		["markdown.mdx"] = { "prettier" },
-		md = { "prettier" },
-		graphql = { "prettier" },
-		handlebars = { "prettier" },
+		javascript = prettierd,
+		javascriptreact = prettierd,
+		typescript = prettierd,
+		typescriptreact = prettierd,
+		vue = prettierd,
+		css = prettierd,
+		scss = prettierd,
+		less = prettierd,
+		html = prettierd,
+		json = prettierd,
+		jsonc = prettierd,
+		yaml = prettierd,
+		markdown = prettierd,
+		["markdown.mdx"] = prettierd,
+		md = prettierd,
+		graphql = prettierd,
+		handlebars = prettierd,
 	},
 })
 
@@ -331,9 +334,50 @@ require("nvim-tmux-navigation").setup({
 -- =============================================================================
 -- THEME AND APPEARANCE
 -- =============================================================================
+require("kanagawa").setup({
+	transparent = true,
+	colors = {
+		theme = {
+			all = {
+				ui = {
+					bg_gutter = "none",
+					pmenu = {
+						bg = "none",
+					},
+				},
+			},
+		},
+	},
+	overrides = function(colors)
+		local theme = colors.theme
+		return {
+			NormalFloat = { bg = "none" },
+			FloatBorder = { bg = "none" },
+			FloatTitle = { bg = "none" },
 
-require("onedark").setup({ transparent = true })
-vim.cmd.colorscheme("onedark")
+			-- Save an hlgroup with dark background and dimmed foreground
+			-- so that you can use it where your still want darker windows.
+			-- E.g.: autocmd TermOpen * setlocal winhighlight=Normal:NormalDark
+			NormalDark = { fg = theme.ui.fg_dim, bg = theme.ui.bg_m3 },
+
+			-- Popular plugins that open floats will link to NormalFloat by default;
+			-- set their background accordingly if you wish to keep them dark and borderless
+			LazyNormal = { bg = theme.ui.bg_m3, fg = theme.ui.fg_dim },
+			MasonNormal = { bg = theme.ui.bg_m3, fg = theme.ui.fg_dim },
+			Pmenu = { fg = theme.ui.shade0, bg = "none" }, -- add `blend = vim.o.pumblend` to enable transparency
+			PmenuSbar = { bg = "none" },
+			PmenuThumb = { bg = "none" },
+		}
+	end,
+})
+
+vim.cmd.colorscheme("kanagawa")
+
+-- require("onedark").setup({ transparent = true })
+-- vim.cmd.colorscheme("onedark")
+--
+-- require("gruvdark").setup({ transparent = true })
+-- vim.cmd.colorscheme("gruvdark")
 
 -- =============================================================================
 -- KEYMAPS
@@ -434,17 +478,11 @@ local function setup_treesitter()
 		end,
 	})
 
-	local highlight_filetypes = vim.deepcopy(ts_parsers)
-	table.insert(highlight_filetypes, "codecompanion")
-
 	autocmd("FileType", {
-		pattern = highlight_filetypes,
+		pattern = ts_parsers,
 		callback = function()
-			-- syntax highlighting, provided by Neovim
 			vim.treesitter.start()
-			-- folds, provided by Neovim
 			vim.wo.foldexpr = "v:lua.vim.treesitter.foldexpr()"
-			-- indentation, provided by nvim-treesitter
 			vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
 		end,
 	})
@@ -728,3 +766,7 @@ vim.keymap.set({ "n", "v" }, "<leader>w", function()
 		end
 	end)
 end, { desc = "[S]ettings [O]ptions" })
+
+local bufjump = require("bufjump")
+vim.keymap.set("n", "[w", bufjump.backward, { desc = "Jump to previous file in jumplist" })
+vim.keymap.set("n", "]w", bufjump.forward, { desc = "Jump to next file in jumplist" })

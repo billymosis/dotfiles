@@ -108,3 +108,5 @@ fi
 # Add legacy Windows PowerShell to PATH (if needed)
 export PATH="/mnt/c/Windows/System32/WindowsPowerShell/v1.0:$PATH"
 export PATH="/mnt/c/Windows/System32:$PATH"
+
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
