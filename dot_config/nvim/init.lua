@@ -168,6 +168,7 @@ require("conform").setup({
 			end
 		end,
 		javascript = prettierd,
+		java = { "google-java-format" },
 		javascriptreact = prettierd,
 		typescript = prettierd,
 		typescriptreact = prettierd,
