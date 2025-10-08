@@ -321,6 +321,13 @@ require("mini.comment").setup({
 -- Mason (LSP installer)
 require("mason").setup()
 
+vim.lsp.config("jdtls", {
+	cmd = {
+		vim.fn.expand("$HOME/.local/share/nvim/mason/bin/jdtls"),
+		("--jvm-arg=-javaagent:%s"):format(vim.fn.expand("$HOME/.local/share/nvim/mason/packages/jdtls/lombok.jar")),
+	},
+})
+
 -- TMUX Navigation
 require("nvim-tmux-navigation").setup({
 	disable_when_zoomed = true,
