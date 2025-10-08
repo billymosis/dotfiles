@@ -320,11 +320,12 @@ require("mini.comment").setup({
 
 -- Mason (LSP installer)
 require("mason").setup()
+local mason_path = vim.fn.stdpath("data")
 
 vim.lsp.config("jdtls", {
 	cmd = {
-		vim.fn.expand("$HOME/.local/share/nvim/mason/bin/jdtls"),
-		("--jvm-arg=-javaagent:%s"):format(vim.fn.expand("$HOME/.local/share/nvim/mason/packages/jdtls/lombok.jar")),
+		vim.fn.expand(mason_path .. "/mason/bin/jdtls"),
+		("--jvm-arg=-javaagent:%s"):format(vim.fn.expand(mason_path .. "/mason/packages/jdtls/lombok.jar")),
 	},
 })
 
