@@ -109,4 +109,11 @@ fi
 export PATH="/mnt/c/Windows/System32/WindowsPowerShell/v1.0:$PATH"
 export PATH="/mnt/c/Windows/System32:$PATH"
 
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
+
+function my_init() {
+  [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+}
+zvm_after_init_commands+=(my_init)

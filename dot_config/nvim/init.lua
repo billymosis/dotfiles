@@ -761,6 +761,32 @@ vim.keymap.set({ "n", "v" }, "<leader>w", function()
 				vim.o.wrap = not vim.o.wrap
 			end,
 		},
+		{
+			name = "Diff current file",
+			action = function()
+				vim.cmd("Git diff -- %")
+			end,
+		},
+		{
+			name = "Toggle Spellcheck",
+			action = function()
+				vim.o.spell = not vim.o.spell
+			end,
+		},
+		{
+			name = "Toggle Inlay Hints",
+			action = function()
+				-- Toggles LSP inlay hints for the current buffer
+				vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled())
+			end,
+		},
+		{
+			name = "Git: View file history",
+			action = function()
+				-- Open the commit history for the current file in a new vertical split
+				vim.cmd("Gclog! -- %")
+			end,
+		},
 	}
 	vim.ui.select(opts, {
 		prompt = "Settings and Options",
