@@ -57,7 +57,7 @@ end)
 -- =============================================================================
 
 -- Enable built-in LSP for common languages
-vim.lsp.enable({ "lua_ls", "pyright", "ts_ls", "gopls", "html", "jdtls", "java" })
+vim.lsp.enable({ "lua_ls", "pyright", "ts_ls", "gopls", "html", "jdtls", "java", "bash-language-server" })
 vim.cmd("set completeopt+=noselect,menuone,popup,fuzzy")
 
 -- =============================================================================
@@ -140,7 +140,7 @@ require("lualine").setup({
 		lualine_c = { { "filename", path = 3 } },
 		lualine_x = {},
 		lualine_y = {
-			{ "lsp_status", ignore_lsp = { "mini.snippets", "Copilot", "GitHub Copilot", "copilot" } },
+			{ "lsp_status" },
 			"bo:filetype",
 		},
 		lualine_z = { "location" },
@@ -328,6 +328,7 @@ vim.lsp.config("jdtls", {
 		("--jvm-arg=-javaagent:%s"):format(vim.fn.expand(mason_path .. "/mason/packages/jdtls/lombok.jar")),
 	},
 })
+vim.lsp.config("bash-language-server", {})
 
 -- TMUX Navigation
 require("nvim-tmux-navigation").setup({
@@ -711,14 +712,21 @@ require("markview").setup({
 })
 
 vim.api.nvim_set_hl(0, "CopilotSuggestion", { italic = true, fg = "#555555" })
-require("copilot").setup({
-	server_opts_overrides = {
-		settings = {
-			telemetry = {
-				telemetryLevel = "off",
+vim.api.nvim_create_autocmd("InsertEnter", {
+	once = true,
+	callback = function()
+		vim.cmd.packadd("copilot.lua")
+		require("copilot").setup({
+			server = {
+				type = "binary",
 			},
-		},
-	},
+			server_opts_overrides = {
+				settings = {
+					telemetry = { telemetryLevel = "off" },
+				},
+			},
+		})
+	end,
 })
 
 vim.keymap.set({ "n", "v" }, "<leader>w", function()
