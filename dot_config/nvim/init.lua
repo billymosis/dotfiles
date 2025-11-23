@@ -57,7 +57,18 @@ end)
 -- =============================================================================
 
 -- Enable built-in LSP for common languages
-vim.lsp.enable({ "lua_ls", "pyright", "ts_ls", "gopls", "html", "jdtls", "java", "bash-language-server" })
+vim.lsp.enable({
+	"lua_ls",
+	"pyright",
+	"ts_ls",
+	"gopls",
+	"html",
+	"jdtls",
+	"java",
+	"bash-language-server",
+	"kotlin-lsp",
+	"copilot",
+})
 vim.cmd("set completeopt+=noselect,menuone,popup,fuzzy")
 
 -- =============================================================================
@@ -74,6 +85,7 @@ vim.pack.add({
 	{ src = "https://github.com/mason-org/mason.nvim" },
 	{ src = "https://github.com/tpope/vim-sleuth" },
 	{ src = "https://github.com/microsoft/python-type-stubs" },
+	{ src = "https://github.com/mfussenegger/nvim-jdtls" },
 
 	-- Formatting
 	{ src = "https://github.com/stevearc/conform.nvim" },
@@ -98,15 +110,13 @@ vim.pack.add({
 	{ src = "https://github.com/windwp/nvim-ts-autotag" },
 	{ src = "https://github.com/saghen/blink.cmp", version = vim.version.range("^1") },
 
-	-- Notes and Documentation
-	{ src = "https://github.com/mickael-menu/zk-nvim" },
-
 	-- Utilities
 	{ src = "https://github.com/michaelrommel/nvim-silicon" },
 	{ src = "https://github.com/nvim-lualine/lualine.nvim" },
 	{ src = "https://github.com/rafamadriz/friendly-snippets" },
 	{ src = "https://github.com/folke/lazydev.nvim" },
 	{ src = "https://github.com/kwkarlwang/bufjump.nvim" },
+	{ src = "https://github.com/tronikelis/ts-autotag.nvim" },
 
 	-- Theme
 	{ src = "https://github.com/navarasu/onedark.nvim" },
@@ -119,11 +129,37 @@ vim.pack.add({
 	{ src = "https://github.com/olimorris/codecompanion.nvim" },
 	{ src = "https://github.com/ravitemer/codecompanion-history.nvim" },
 	{ src = "https://github.com/OXY2DEV/markview.nvim" },
+	{ src = "https://github.com/folke/sidekick.nvim" },
 })
 
 -- =============================================================================
 -- PLUGIN CONFIGURATIONS
 -- =============================================================================
+
+-- Sidekick
+require("sidekick").setup({
+	nes = {
+		enabled = false,
+	},
+	cli = {
+		enabled = true,
+		mux = {
+			enabled = true,
+			backend = "tmux",
+		},
+	},
+})
+
+vim.keymap.set("n", "<leader>n", function()
+	require("sidekick").nes_jump_or_apply()
+end, { desc = "Goto/Apply Next Edit Suggestion" })
+
+-- Autotag
+require("ts-autotag").setup({
+	auto_rename = {
+		enabled = true,
+	},
+})
 
 -- Lualine (Status Line)
 require("lualine").setup({
@@ -247,22 +283,6 @@ require("gitsigns").setup({
 		-- Text object
 		map({ "o", "x" }, "ih", gitsigns.select_hunk)
 	end,
-})
-
--- ZK (Zettelkasten)
-require("zk").setup({
-	picker = "select",
-	lsp = {
-		config = {
-			name = "zk",
-			cmd = { "zk", "lsp" },
-			filetypes = { "markdown" },
-			on_attach = function(client, bufnr) end,
-		},
-		auto_attach = {
-			enabled = true,
-		},
-	},
 })
 
 -- HACK: Redeclare when sourcing
@@ -472,6 +492,7 @@ local function setup_treesitter()
 		"yaml",
 		"zig",
 		"regex",
+		"kotlin",
 	}
 	local nts = require("nvim-treesitter")
 	nts.install(ts_parsers)
@@ -717,9 +738,6 @@ vim.api.nvim_create_autocmd("InsertEnter", {
 	callback = function()
 		vim.cmd.packadd("copilot.lua")
 		require("copilot").setup({
-			server = {
-				type = "binary",
-			},
 			server_opts_overrides = {
 				settings = {
 					telemetry = { telemetryLevel = "off" },
@@ -755,6 +773,12 @@ vim.keymap.set({ "n", "v" }, "<leader>w", function()
 			name = "Copilot panel",
 			action = function()
 				vim.cmd("Copilot panel")
+			end,
+		},
+		{
+			name = "Sidekick toggle",
+			action = function()
+				vim.cmd("Sidekick cli toggle")
 			end,
 		},
 		{
@@ -813,3 +837,4 @@ end, { desc = "[S]ettings [O]ptions" })
 local bufjump = require("bufjump")
 vim.keymap.set("n", "[w", bufjump.backward, { desc = "Jump to previous file in jumplist" })
 vim.keymap.set("n", "]w", bufjump.forward, { desc = "Jump to next file in jumplist" })
+vim.keymap.set("t", "<Esc>", [[<C-\><C-n>]])
