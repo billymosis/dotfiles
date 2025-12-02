@@ -68,6 +68,7 @@ vim.lsp.enable({
 	"bash-language-server",
 	"kotlin-lsp",
 	"copilot",
+	"templ",
 })
 vim.cmd("set completeopt+=noselect,menuone,popup,fuzzy")
 
@@ -126,7 +127,9 @@ vim.pack.add({
 	-- AI
 	-- { src = "https://github.com/github/copilot.vim" },
 	{ src = "https://github.com/zbirenbaum/copilot.lua" },
-	{ src = "https://github.com/olimorris/codecompanion.nvim" },
+	{ src = "https://github.com/copilotlsp-nvim/copilot-lsp" },
+
+	{ src = "https://github.com/olimorris/codecompanion.nvim", version = "v17.33.0" },
 	{ src = "https://github.com/ravitemer/codecompanion-history.nvim" },
 	{ src = "https://github.com/OXY2DEV/markview.nvim" },
 	{ src = "https://github.com/folke/sidekick.nvim" },
@@ -221,6 +224,7 @@ require("conform").setup({
 		md = prettierd,
 		graphql = prettierd,
 		handlebars = prettierd,
+		templ = { "templ" },
 	},
 })
 
@@ -314,6 +318,7 @@ Snacks.setup({
 	picker = {
 		ui_select = true,
 	},
+	gitbrowse = {},
 })
 
 -- Mini.nvim plugins
@@ -493,6 +498,7 @@ local function setup_treesitter()
 		"zig",
 		"regex",
 		"kotlin",
+		"templ",
 	}
 	local nts = require("nvim-treesitter")
 	nts.install(ts_parsers)
@@ -741,6 +747,14 @@ vim.api.nvim_create_autocmd("InsertEnter", {
 			server_opts_overrides = {
 				settings = {
 					telemetry = { telemetryLevel = "off" },
+				},
+			},
+			nes = {
+				enabled = false,
+				keymap = {
+					accept_and_goto = "<leader>p",
+					accept = false,
+					dismiss = "<Esc>",
 				},
 			},
 		})
