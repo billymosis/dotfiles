@@ -118,6 +118,8 @@ vim.pack.add({
 	{ src = "https://github.com/folke/lazydev.nvim" },
 	{ src = "https://github.com/kwkarlwang/bufjump.nvim" },
 	{ src = "https://github.com/tronikelis/ts-autotag.nvim" },
+	{ src = "https://github.com/tpope/vim-dadbod" },
+	{ src = "https://github.com/kristijanhusak/vim-dadbod-ui" },
 
 	-- Theme
 	{ src = "https://github.com/navarasu/onedark.nvim" },
@@ -744,6 +746,9 @@ vim.api.nvim_create_autocmd("InsertEnter", {
 	callback = function()
 		vim.cmd.packadd("copilot.lua")
 		require("copilot").setup({
+			suggestion = {
+				auto_trigger = true,
+			},
 			server_opts_overrides = {
 				settings = {
 					telemetry = { telemetryLevel = "off" },
