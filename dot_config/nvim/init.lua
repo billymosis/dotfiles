@@ -7,6 +7,21 @@ local function command_exists(name)
 	return commands[name] ~= nil
 end
 
+-- if vim.fn.has("wsl") then
+-- 	vim.g.clipboard = {
+-- 		name = "win32yank-wsl",
+-- 		copy = {
+-- 			["+"] = "win32yank.exe -i --crlf",
+-- 			["*"] = "win32yank.exe -i --crlf",
+-- 		},
+-- 		paste = {
+-- 			["+"] = "win32yank.exe -o --lf",
+-- 			["*"] = "win32yank.exe -o --lf",
+-- 		},
+-- 		cache_enabled = true,
+-- 	}
+-- end
+
 -- UI Settings
 vim.o.number = true
 vim.o.relativenumber = true
@@ -131,7 +146,7 @@ vim.pack.add({
 	{ src = "https://github.com/zbirenbaum/copilot.lua" },
 	{ src = "https://github.com/copilotlsp-nvim/copilot-lsp" },
 
-	{ src = "https://github.com/olimorris/codecompanion.nvim", version = "v17.33.0" },
+	{ src = "https://github.com/olimorris/codecompanion.nvim" },
 	{ src = "https://github.com/ravitemer/codecompanion-history.nvim" },
 	{ src = "https://github.com/OXY2DEV/markview.nvim" },
 	{ src = "https://github.com/folke/sidekick.nvim" },
@@ -659,7 +674,7 @@ require("codecompanion").setup({
 	},
 	extensions = {
 		history = {
-			enabled = true,
+			enabled = false,
 			opts = {
 				-- Keymap to open history from chat buffer (default: gh)
 				keymap = "gh",
