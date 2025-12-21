@@ -1,21 +1,6 @@
-ZSH_THEME="billy"
-local my_plugins=(git)
-
-if [[ "$TERM_PROGRAM" != "vscode" ]]; then
-  my_plugins+=(poetry zsh-autosuggestions kubectl common-aliases aws zsh-vi-mode)
-
-  session_name="BMP"
-  tmux has-session -t=$session_name 2> /dev/null
-  if [[ $? -ne 0 ]]; then
-    TMUX='' tmux new-session -d -s "$session_name"
-  fi
-  if [[ -z "$TMUX" ]]; then
-    tmux attach -t "$session_name"
-  fi
-fi
-
-plugins=($my_plugins)
-
+# ==========================================
+# 1. ENVIRONMENT & PATHS (MUST BE FIRST!)
+# ==========================================
 export ZSH="$HOME/.oh-my-zsh"
 export GOPATH=$HOME/go
 export GOROOT=/usr/local/go
@@ -25,6 +10,7 @@ export NVM_DIR="$HOME/.nvm"
 export XDG_DATA_DIRS=$XDG_DATA_DIRS:/var/lib/flatpak/exports/share:$HOME/.local/share/flatpak/exports/share
 export ZK_NOTEBOOK_DIR=$HOME/my-notes
 
+# Construct PATH
 export PATH=~/.local/bin:$PATH
 export PATH=~/bin:$PATH
 export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
@@ -32,7 +18,70 @@ export PATH=$PATH:$HOME/.local/share/nvim/mason/bin
 export PATH=$PATH:$HOME/.local/share/bob/nvim-bin
 export PATH="$HOME/.fzf/bin:$PATH"
 export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
+export PATH=/home/billy/.opencode/bin:$PATH
 
+# Bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+
+# pnpm
+export PNPM_HOME="/home/bimo/.local/share/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+
+# fnm
+FNM_PATH="/home/billy/.local/share/fnm"
+if [ -d "$FNM_PATH" ]; then
+  export PATH="$FNM_PATH:$PATH"
+  eval "`fnm env`"
+fi
+
+# ==========================================
+# 2. TMUX & WSL CONFIGURATION
+# ==========================================
+ZSH_THEME="billy"
+local my_plugins=(git)
+
+# Only run if not in VSCode
+if [[ "$TERM_PROGRAM" != "vscode" ]]; then
+  
+  # A. If we are ALREADY inside Tmux (The Inner Shell)
+  if [[ -n "$TMUX" ]]; then
+      # Fix WSL Interop (The "Socket" Issue)
+      if [ ! -w "$WSL_INTEROP" ]; then
+          export WSL_INTEROP=/run/WSL/$(ls -tr /run/WSL/ | grep interop | tail -1)
+      fi
+      
+      # Load heavy plugins only inside tmux
+      my_plugins+=(poetry zsh-autosuggestions kubectl common-aliases aws zsh-vi-mode)
+
+  # B. If we are OUTSIDE Tmux (The Launcher)
+  else
+      session_name="BMP"
+      
+      # Ensure session exists
+      tmux has-session -t=$session_name 2> /dev/null
+      if [[ $? -ne 0 ]]; then
+        TMUX='' tmux new-session -d -s "$session_name"
+      fi
+      
+      # Attach. This will BLOCK here until you detach.
+      # Because Exports are now above this line, Tmux inherits the correct PATH.
+      tmux attach -t "$session_name"
+  fi
+fi
+
+# ==========================================
+# 3. OH-MY-ZSH & PLUGINS
+# ==========================================
+plugins=($my_plugins)
+source $ZSH/oh-my-zsh.sh
+
+# ==========================================
+# 4. ALIASES & FUNCTIONS
+# ==========================================
 alias v="nvim"
 alias vf="fdfind --type f --hidden --exclude .git \
     | fzf-tmux -p --reverse -w 80% -h 80% \
@@ -44,34 +93,6 @@ alias lg="lazygit"
 alias lq="lazydocker"
 alias cpcl='xclip -sel clip'
 
-source $HOME/.cargo/env 2> /dev/null
-source $ZSH/oh-my-zsh.sh
-
-
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-
-# export PYENV_ROOT="$HOME/.pyenv"
-# [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
-# eval "$(pyenv init -)"
-
-
-# bun completions
-[ -s "/home/bimo/.bun/_bun" ] && source "/home/bimo/.bun/_bun"
-
-# bun
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
-. "$HOME/.cargo/env"
-
-# pnpm
-export PNPM_HOME="/home/bimo/.local/share/pnpm"
-case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
-esac
-# pnpm end
-
 function y() {
 	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
 	yazi "$@" --cwd-file="$tmp"
@@ -81,24 +102,24 @@ function y() {
 	rm -f -- "$tmp"
 }
 
-# fnm
-FNM_PATH="/home/billy/.local/share/fnm"
-if [ -d "$FNM_PATH" ]; then
-  export PATH="$FNM_PATH:$PATH"
-  eval "`fnm env`"
-fi
-
 function my_init() {
   [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 }
 zvm_after_init_commands+=(my_init)
 
+# ==========================================
+# 5. FINAL SOURCING
+# ==========================================
+source $HOME/.cargo/env 2> /dev/null
 
-# opencode
-export PATH=/home/billy/.opencode/bin:$PATH
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+# bun completions
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 
 [[ "$TERM_PROGRAM" == "vscode" ]] && . "$(code --locate-shell-integration-path zsh)"
 
-#THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+# THIS MUST BE AT THE END
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
