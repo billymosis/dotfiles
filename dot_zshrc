@@ -27,15 +27,15 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 # pnpm
 export PNPM_HOME="/home/bimo/.local/share/pnpm"
 case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
+*":$PNPM_HOME:"*) ;;
+*) export PATH="$PNPM_HOME:$PATH" ;;
 esac
 
 # fnm
 FNM_PATH="/home/billy/.local/share/fnm"
 if [ -d "$FNM_PATH" ]; then
-  export PATH="$FNM_PATH:$PATH"
-  eval "`fnm env`"
+	export PATH="$FNM_PATH:$PATH"
+	eval "$(fnm env)"
 fi
 
 # ==========================================
@@ -46,31 +46,31 @@ local my_plugins=(git)
 
 # Only run if not in VSCode
 if [[ "$TERM_PROGRAM" != "vscode" ]]; then
-  
-  # A. If we are ALREADY inside Tmux (The Inner Shell)
-  if [[ -n "$TMUX" ]]; then
-      # Fix WSL Interop (The "Socket" Issue)
-      if [ ! -w "$WSL_INTEROP" ]; then
-          export WSL_INTEROP=/run/WSL/$(ls -tr /run/WSL/ | grep interop | tail -1)
-      fi
-      
-      # Load heavy plugins only inside tmux
-      my_plugins+=(poetry zsh-autosuggestions kubectl common-aliases aws zsh-vi-mode)
 
-  # B. If we are OUTSIDE Tmux (The Launcher)
-  else
-      session_name="BMP"
-      
-      # Ensure session exists
-      tmux has-session -t=$session_name 2> /dev/null
-      if [[ $? -ne 0 ]]; then
-        TMUX='' tmux new-session -d -s "$session_name"
-      fi
-      
-      # Attach. This will BLOCK here until you detach.
-      # Because Exports are now above this line, Tmux inherits the correct PATH.
-      tmux attach -t "$session_name"
-  fi
+	# A. If we are ALREADY inside Tmux (The Inner Shell)
+	if [[ -n "$TMUX" ]]; then
+		# Fix WSL Interop (The "Socket" Issue)
+		if [ ! -w "$WSL_INTEROP" ]; then
+			export WSL_INTEROP=/run/WSL/$(ls -tr /run/WSL/ | grep interop | tail -1)
+		fi
+
+		# Load heavy plugins only inside tmux
+		my_plugins+=(poetry zsh-autosuggestions kubectl common-aliases aws zsh-vi-mode)
+
+	# B. If we are OUTSIDE Tmux (The Launcher)
+	else
+		session_name="BMP"
+
+		# Ensure session exists
+		tmux has-session -t=$session_name 2>/dev/null
+		if [[ $? -ne 0 ]]; then
+			TMUX='' tmux new-session -d -s "$session_name"
+		fi
+
+		# Attach. This will BLOCK here until you detach.
+		# Because Exports are now above this line, Tmux inherits the correct PATH.
+		tmux attach -t "$session_name"
+	fi
 fi
 
 # ==========================================
@@ -103,14 +103,14 @@ function y() {
 }
 
 function my_init() {
-  [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+	[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 }
 zvm_after_init_commands+=(my_init)
 
 # ==========================================
 # 5. FINAL SOURCING
 # ==========================================
-source $HOME/.cargo/env 2> /dev/null
+source $HOME/.cargo/env 2>/dev/null
 
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"

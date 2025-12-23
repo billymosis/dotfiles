@@ -7,6 +7,8 @@ local function command_exists(name)
 	return commands[name] ~= nil
 end
 
+require("user.utils")
+
 -- if vim.fn.has("wsl") then
 -- 	vim.g.clipboard = {
 -- 		name = "win32yank-wsl",
@@ -135,6 +137,8 @@ vim.pack.add({
 	{ src = "https://github.com/tronikelis/ts-autotag.nvim" },
 	{ src = "https://github.com/tpope/vim-dadbod" },
 	{ src = "https://github.com/kristijanhusak/vim-dadbod-ui" },
+	{ src = "https://github.com/esmuellert/vscode-diff.nvim" },
+	{ src = "https://github.com/MunifTanjim/nui.nvim" },
 
 	-- Theme
 	{ src = "https://github.com/navarasu/onedark.nvim" },
@@ -146,8 +150,6 @@ vim.pack.add({
 	{ src = "https://github.com/zbirenbaum/copilot.lua" },
 	{ src = "https://github.com/copilotlsp-nvim/copilot-lsp" },
 
-	{ src = "https://github.com/olimorris/codecompanion.nvim" },
-	{ src = "https://github.com/ravitemer/codecompanion-history.nvim" },
 	{ src = "https://github.com/OXY2DEV/markview.nvim" },
 	{ src = "https://github.com/folke/sidekick.nvim" },
 })
@@ -173,6 +175,22 @@ require("sidekick").setup({
 vim.keymap.set("n", "<leader>n", function()
 	require("sidekick").nes_jump_or_apply()
 end, { desc = "Goto/Apply Next Edit Suggestion" })
+
+vim.keymap.set("", "<leader>af", function()
+	require("sidekick.cli").send({ msg = "{file}" })
+end, { desc = "Send File" })
+
+vim.keymap.set("x", "<leader>av", function()
+	require("sidekick.cli").send({ msg = "{selection}" })
+end, { desc = "Send Visual Selection" })
+
+vim.keymap.set({ "x", "n" }, "<leader>at", function()
+	require("sidekick.cli").send({ msg = "{this}" })
+end, { desc = "Send This" })
+
+vim.keymap.set("", "<leader>ac", function()
+	require("sidekick.cli").toggle({ name = "copilot", focus = false })
+end, { desc = "Sidekick toggle copilot" })
 
 -- Autotag
 require("ts-autotag").setup({
@@ -242,6 +260,9 @@ require("conform").setup({
 		graphql = prettierd,
 		handlebars = prettierd,
 		templ = { "templ" },
+		sh = { "shfmt" },
+		bash = { "shfmt" },
+		zsh = { "shfmt" },
 	},
 })
 
@@ -667,90 +688,9 @@ map("gD", function()
 	require("snacks").picker.lsp_declarations()
 end, "[G]oto [D]eclaration")
 
--- Code companion
-require("codecompanion").setup({
-	opts = {
-		log_level = "DEBUG", -- or "TRACE"
-	},
-	extensions = {
-		history = {
-			enabled = false,
-			opts = {
-				-- Keymap to open history from chat buffer (default: gh)
-				keymap = "gh",
-				-- Keymap to save the current chat manually (when auto_save is disabled)
-				save_chat_keymap = "sc",
-				-- Save all chats by default (disable to save only manually using 'sc')
-				auto_save = true,
-				-- Number of days after which chats are automatically deleted (0 to disable)
-				expiration_days = 0,
-				-- Picker interface (auto resolved to a valid picker)
-				picker = "snacks", --- ("telescope", "snacks", "fzf-lua", or "default")
-				---Optional filter function to control which chats are shown when browsing
-				chat_filter = nil, -- function(chat_data) return boolean end
-				-- Customize picker keymaps (optional)
-				picker_keymaps = {
-					rename = { n = "r", i = "<M-r>" },
-					delete = { n = "d", i = "<M-d>" },
-					duplicate = { n = "<C-y>", i = "<C-y>" },
-				},
-				---Automatically generate titles for new chats
-				auto_generate_title = true,
-				title_generation_opts = {
-					---Adapter for generating titles (defaults to current chat adapter)
-					adapter = "copilot", -- "copilot"
-					---Model for generating titles (defaults to current chat model)
-					model = "gpt-4o", -- "gpt-4o"
-					---Number of user prompts after which to refresh the title (0 to disable)
-					refresh_every_n_prompts = 0, -- e.g., 3 to refresh after every 3rd user prompt
-					---Maximum number of times to refresh the title (default: 3)
-					max_refreshes = 3,
-					format_title = function(original_title)
-						-- this can be a custom function that applies some custom
-						-- formatting to the title.
-						return original_title
-					end,
-				},
-				---On exiting and entering neovim, loads the last chat on opening chat
-				continue_last_chat = false,
-				---When chat is cleared with `gx` delete the chat from history
-				delete_on_clearing_chat = false,
-				---Directory path to save the chats
-				dir_to_save = vim.fn.stdpath("data") .. "/codecompanion-history",
-				---Enable detailed logging for history extension
-				enable_logging = false,
-
-				-- Summary system
-				summary = {
-					-- Keymap to generate summary for current chat (default: "gcs")
-					create_summary_keymap = "gcs",
-					-- Keymap to browse summaries (default: "gbs")
-					browse_summaries_keymap = "gbs",
-
-					generation_opts = {
-						adapter = "copilot", -- defaults to current chat adapter
-						model = "gpt-4o", -- defaults to current chat model
-						context_size = 90000, -- max tokens that the model supports
-						include_references = true, -- include slash command content
-						include_tool_outputs = true, -- include tool execution results
-						system_prompt = nil, -- custom system prompt (string or function)
-						format_summary = nil, -- custom function to format generated summary e.g to remove <think/> tags from summary
-					},
-				},
-			},
-		},
-	},
-})
-
--- vim.keymap.set({ "n", "v" }, "<C-a>", "<cmd>CodeCompanionActions<cr>", { noremap = true, silent = true })
-vim.keymap.set({ "n", "v" }, "<leader>a", "<cmd>CodeCompanionChat Toggle<cr>", { noremap = true, silent = true })
-vim.keymap.set("v", "ga", "<cmd>CodeCompanionChat Add<cr>", { noremap = true, silent = true })
-
--- Expand 'cc' into 'CodeCompanion' in the command line
-vim.cmd([[cab cc CodeCompanion]])
 require("markview").setup({
 	preview = {
-		filetypes = { "markdown", "codecompanion" },
+		filetypes = { "markdown" },
 		ignore_buftypes = {},
 	},
 })
@@ -781,22 +721,55 @@ vim.api.nvim_create_autocmd("InsertEnter", {
 	end,
 })
 
+local function feed_cmd(cmd)
+	local keys = vim.api.nvim_replace_termcodes(":" .. cmd .. " ", true, false, true)
+	vim.api.nvim_feedkeys(keys, "n", false)
+end
+
+vim.keymap.set({ "n", "v" }, "<leader>q", function()
+	local opts = {
+		{
+			name = "Context: Grep 'AND' (Find in files with A + B)",
+			action = function()
+				feed_cmd("Qga")
+			end,
+		},
+		{
+			name = "Context: Poupulate Quickfix List",
+			action = function()
+				feed_cmd("Qc")
+			end,
+		},
+		{
+			name = "Context: Poupulate Quickfix List with hunks",
+			action = function()
+				feed_cmd("Qch")
+			end,
+		},
+		{
+			name = "Context: Tree to Buffer (Project Structure)",
+			action = function()
+				feed_cmd("Qt")
+			end,
+		},
+	}
+	vim.ui.select(opts, {
+		prompt = "Settings and Options",
+		format_item = function(item)
+			return item.name
+		end,
+	}, function(item)
+		if item then
+			item.action()
+		else
+			print("No option selected")
+		end
+	end)
+end, { desc = "Context Command" })
+
 vim.keymap.set({ "n", "v" }, "<leader>w", function()
 	local mode = vim.fn.mode()
 	local opts = {
-		{
-			name = "Code Companion Action",
-			action = function()
-				if mode == "v" or mode == "V" or mode == "\22" then -- visual, linewise, blockwise
-					-- Run command on selected lines
-					vim.cmd(string.format(":'<,'>CodeCompanionActions"))
-					-- Optionally, exit visual mode
-					vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "n", true)
-				else
-					vim.cmd("CodeCompanionActions")
-				end
-			end,
-		},
 		{
 			name = "Toggle copilot auto trigger",
 			action = function()
@@ -811,6 +784,12 @@ vim.keymap.set({ "n", "v" }, "<leader>w", function()
 		},
 		{
 			name = "Sidekick toggle",
+			action = function()
+				vim.cmd("Sidekick cli toggle")
+			end,
+		},
+		{
+			name = "Grep And",
 			action = function()
 				vim.cmd("Sidekick cli toggle")
 			end,
