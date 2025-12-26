@@ -149,6 +149,7 @@ vim.pack.add({
 	-- { src = "https://github.com/github/copilot.vim" },
 	{ src = "https://github.com/zbirenbaum/copilot.lua" },
 	{ src = "https://github.com/copilotlsp-nvim/copilot-lsp" },
+	{ src = "https://github.com/coder/claudecode.nvim" },
 
 	{ src = "https://github.com/OXY2DEV/markview.nvim" },
 	{ src = "https://github.com/folke/sidekick.nvim" },
@@ -157,6 +158,60 @@ vim.pack.add({
 -- =============================================================================
 -- PLUGIN CONFIGURATIONS
 -- =============================================================================
+
+require("claudecode").setup({
+	terminal = {
+		split_width_percentage = 0.5,
+	},
+})
+
+vim.keymap.set("n", "<leader>ac", "<cmd>ClaudeCode<cr>", { desc = "Toggle Claude" })
+vim.keymap.set("n", "<leader>af", "<cmd>ClaudeCodeFocus<cr>", { desc = "Focus Claude" })
+vim.keymap.set("n", "<leader>ar", "<cmd>ClaudeCode --resume<cr>", { desc = "Resume Claude" })
+vim.keymap.set("n", "<leader>aC", "<cmd>ClaudeCode --continue<cr>", { desc = "Continue Claude" })
+vim.keymap.set("n", "<leader>am", "<cmd>ClaudeCodeSelectModel<cr>", { desc = "Select Claude model" })
+vim.keymap.set("n", "<leader>ab", "<cmd>ClaudeCodeAdd %<cr>", { desc = "Add current buffer" })
+vim.keymap.set("v", "<leader>as", "<cmd>ClaudeCodeSend<cr>", { desc = "Send to Claude" })
+vim.keymap.set("n", "<leader>aa", "<cmd>ClaudeCodeDiffAccept<cr>", { desc = "Accept diff" })
+vim.keymap.set("n", "<leader>ad", "<cmd>ClaudeCodeDiffDeny<cr>", { desc = "Deny diff" })
+
+vim.api.nvim_create_autocmd("FileType", {
+	desc = "Add file",
+	group = vim.api.nvim_create_augroup("ClaudeCodeFileAdd", { clear = true }),
+	pattern = { "NvimTree", "neo-tree", "oil", "minifiles", "netrw" },
+	callback = function()
+		vim.keymap.set("n", "<leader>as", "<cmd>ClaudeCodeTreeAdd<cr>", { desc = "Add file" })
+	end,
+})
+
+local tnoremap = function(lhs, rhs, opts)
+	opts = opts or {}
+	opts.silent = true
+	vim.keymap.set("t", lhs, rhs, opts)
+end
+
+vim.api.nvim_create_autocmd("TermOpen", {
+	pattern = "*",
+	callback = function()
+		local buffer = vim.api.nvim_get_current_buf()
+		local name = vim.api.nvim_buf_get_name(buffer)
+		vim.print(name)
+
+		if string.find(name, "claude") then
+			-- 	-- Switch to normal mode when pressing Escape in terminal mode
+			tnoremap("<Esc>", "<C-\\><C-n>", { buffer = buffer })
+			--
+			-- Send Escape when pressing Ctrl-X in terminal mode
+			tnoremap("<C-x>", "<Esc>", { buffer = buffer })
+
+			-- Map Ctrl+h/j/k/l to navigate between tmux panes
+			tnoremap("<C-h>", "<Cmd>NvimTmuxNavigateLeft<CR>", { buffer = buffer })
+			tnoremap("<C-j>", "<Cmd>NvimTmuxNavigateDown<CR>", { buffer = buffer })
+			tnoremap("<C-k>", "<Cmd>NvimTmuxNavigateUp<CR>", { buffer = buffer })
+			tnoremap("<C-l>", "<Cmd>NvimTmuxNavigateRight<CR>", { buffer = buffer })
+		end
+	end,
+})
 
 -- Sidekick
 require("sidekick").setup({
@@ -169,6 +224,9 @@ require("sidekick").setup({
 			enabled = true,
 			backend = "tmux",
 		},
+		tools = {
+			deepseek = { cmd = { "claude", "--settings", os.getenv("HOME") .. "/.claude/env.json" } },
+		},
 	},
 })
 
@@ -176,21 +234,21 @@ vim.keymap.set("n", "<leader>n", function()
 	require("sidekick").nes_jump_or_apply()
 end, { desc = "Goto/Apply Next Edit Suggestion" })
 
-vim.keymap.set("", "<leader>af", function()
-	require("sidekick.cli").send({ msg = "{file}" })
-end, { desc = "Send File" })
-
-vim.keymap.set("x", "<leader>av", function()
-	require("sidekick.cli").send({ msg = "{selection}" })
-end, { desc = "Send Visual Selection" })
-
-vim.keymap.set({ "x", "n" }, "<leader>at", function()
-	require("sidekick.cli").send({ msg = "{this}" })
-end, { desc = "Send This" })
-
-vim.keymap.set("", "<leader>ac", function()
-	require("sidekick.cli").toggle({ name = "copilot", focus = false })
-end, { desc = "Sidekick toggle copilot" })
+-- vim.keymap.set("", "<leader>af", function()
+-- 	require("sidekick.cli").send({ msg = "{file}" })
+-- end, { desc = "Send File" })
+--
+-- vim.keymap.set("x", "<leader>av", function()
+-- 	require("sidekick.cli").send({ msg = "{selection}" })
+-- end, { desc = "Send Visual Selection" })
+--
+-- vim.keymap.set({ "x", "n" }, "<leader>at", function()
+-- 	require("sidekick.cli").send({ msg = "{this}" })
+-- end, { desc = "Send This" })
+--
+-- vim.keymap.set("", "<leader>ac", function()
+-- 	require("sidekick.cli").toggle({ name = "copilot", focus = false })
+-- end, { desc = "Sidekick toggle copilot" })
 
 -- Autotag
 require("ts-autotag").setup({

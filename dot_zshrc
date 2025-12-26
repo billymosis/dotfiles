@@ -92,6 +92,8 @@ alias vf="fdfind --type f --hidden --exclude .git \
 alias lg="lazygit"
 alias lq="lazydocker"
 alias cpcl='xclip -sel clip'
+alias serena='uvx --from git+https://github.com/oraios/serena serena'
+alias rm='rm'
 
 function y() {
 	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
