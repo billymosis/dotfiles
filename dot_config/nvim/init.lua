@@ -234,21 +234,21 @@ vim.keymap.set("n", "<leader>n", function()
 	require("sidekick").nes_jump_or_apply()
 end, { desc = "Goto/Apply Next Edit Suggestion" })
 
--- vim.keymap.set("", "<leader>af", function()
--- 	require("sidekick.cli").send({ msg = "{file}" })
--- end, { desc = "Send File" })
---
--- vim.keymap.set("x", "<leader>av", function()
--- 	require("sidekick.cli").send({ msg = "{selection}" })
--- end, { desc = "Send Visual Selection" })
---
--- vim.keymap.set({ "x", "n" }, "<leader>at", function()
--- 	require("sidekick.cli").send({ msg = "{this}" })
--- end, { desc = "Send This" })
---
--- vim.keymap.set("", "<leader>ac", function()
--- 	require("sidekick.cli").toggle({ name = "copilot", focus = false })
--- end, { desc = "Sidekick toggle copilot" })
+vim.keymap.set("", "<leader>df", function()
+	require("sidekick.cli").send({ msg = "{file}" })
+end, { desc = "Send File" })
+
+vim.keymap.set("x", "<leader>ds", function()
+	require("sidekick.cli").send({ msg = "{selection}" })
+end, { desc = "Send Visual Selection" })
+
+vim.keymap.set({ "x", "n" }, "<leader>dt", function()
+	require("sidekick.cli").send({ msg = "{this}" })
+end, { desc = "Send This" })
+
+vim.keymap.set("", "<leader>dc", function()
+	require("sidekick.cli").toggle({ name = "copilot", focus = false })
+end, { desc = "Sidekick toggle copilot" })
 
 -- Autotag
 require("ts-autotag").setup({
