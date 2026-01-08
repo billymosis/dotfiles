@@ -97,6 +97,10 @@ alias lq="lazydocker"
 alias cpcl='xclip -sel clip'
 alias serena='uvx --from git+https://github.com/oraios/serena serena'
 alias rm='rm'
+function genrepo() {
+	echo 'TODO: add rclone support'
+	repomix --include-logs --remove-empty-lines --truncate-base64 -o "$(basename "$PWD").xml" "$@"
+}
 
 function y() {
 	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"

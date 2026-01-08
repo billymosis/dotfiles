@@ -205,3 +205,98 @@ vim.api.nvim_create_user_command("Qch", function(opts)
 	vim.bo[buf].filetype = "markdown" -- or 'javascript' for syntax highlighting
 	print("Snippets dumped!")
 end, { nargs = "?" })
+
+-- Global (or file-local) variable to track the temporary context buffer
+local llm_context_buf = nil
+
+-- Helper: Get or Create the Context Buffer
+local function get_context_buf()
+	-- Check if buffer exists and is valid
+	if llm_context_buf and vim.api.nvim_buf_is_valid(llm_context_buf) then
+		return llm_context_buf
+	end
+
+	-- Create new vertical split
+	vim.cmd("vnew")
+	llm_context_buf = vim.api.nvim_get_current_buf()
+
+	-- Set Buffer Options (Scratchpad)
+	vim.bo[llm_context_buf].buftype = "nofile"
+	vim.bo[llm_context_buf].bufhidden = "hide" -- Keep content when buffer is hidden
+	vim.bo[llm_context_buf].swapfile = false
+	vim.bo[llm_context_buf].filetype = "markdown"
+
+	-- Return focus to the original window (optional, remove if you want to jump to context)
+	vim.cmd("wincmd p")
+
+	return llm_context_buf
+end
+
+-- Helper: Append lines to the context buffer
+local function append_to_context(lines)
+	local buf = get_context_buf()
+
+	-- Get current line count to append at the end
+	local line_count = vim.api.nvim_buf_line_count(buf)
+
+	-- Add a separator if the buffer isn't empty
+	if line_count > 1 then
+		table.insert(lines, 1, "")
+		table.insert(lines, 2, "---")
+		table.insert(lines, 3, "")
+	end
+
+	vim.api.nvim_buf_set_lines(buf, -1, -1, false, lines)
+	print("Added to LLM Context Buffer")
+end
+
+-- Command 1: Qs (Query Snippet)
+-- Logic: If Visual -> Code + Ref. If Normal -> Ref Only.
+vim.api.nvim_create_user_command("Qs", function(opts)
+	local filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":.")
+	local filetype = vim.bo.filetype
+	local output = {}
+
+	-- opts.count comes from 'range'.
+	-- In user commands, -range=0 means default is 0.
+	-- If user selects visual, count > 0.
+	if opts.count > 0 then
+		-- VISUAL MODE DETECTED
+		local start_line = opts.line1
+		local end_line = opts.line2
+
+		-- Get the selected lines
+		local lines = vim.api.nvim_buf_get_lines(0, start_line - 1, end_line, false)
+
+		-- Format Output
+		table.insert(output, "File: " .. filename .. " (Lines " .. start_line .. "-" .. end_line .. ")")
+		table.insert(output, "```" .. filetype)
+		for _, line in ipairs(lines) do
+			table.insert(output, line)
+		end
+		table.insert(output, "```")
+	else
+		-- NORMAL MODE (No selection)
+		local curr_line = vim.fn.line(".")
+		table.insert(output, "File Reference: " .. filename .. " (Line " .. curr_line .. ")")
+	end
+
+	append_to_context(output)
+end, { range = 0 }) -- range=0 allows us to detect if a range was actually sent
+
+-- Command 2: Ql (Query Location)
+-- Logic: Always just Filename + Line Number (Visual range or Cursor)
+vim.api.nvim_create_user_command("Ql", function(opts)
+	local filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":.")
+	local output = {}
+
+	if opts.count > 0 then
+		-- Range provided
+		table.insert(output, "File Reference: " .. filename .. " (Lines " .. opts.line1 .. "-" .. opts.line2 .. ")")
+	else
+		-- Current cursor
+		table.insert(output, "File Reference: " .. filename .. " (Line " .. vim.fn.line(".") .. ")")
+	end
+
+	append_to_context(output)
+end, { range = 0 })
