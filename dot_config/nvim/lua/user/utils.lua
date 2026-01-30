@@ -211,12 +211,21 @@ local llm_context_buf = nil
 
 -- Helper: Get or Create the Context Buffer
 local function get_context_buf()
-	-- Check if buffer exists and is valid
+	-- 1. Check if buffer exists and is valid in memory
 	if llm_context_buf and vim.api.nvim_buf_is_valid(llm_context_buf) then
+		-- 2. Check if it is currently visible in any window
+		if vim.fn.bufwinid(llm_context_buf) == -1 then
+			-- It exists but is hidden. Open a vertical split and set it to this buffer.
+			vim.cmd("vsplit")
+			vim.api.nvim_win_set_buf(0, llm_context_buf)
+
+			-- Return focus to the original window
+			vim.cmd("wincmd p")
+		end
 		return llm_context_buf
 	end
 
-	-- Create new vertical split
+	-- 3. Create new vertical split (Buffer didn't exist or was wiped)
 	vim.cmd("vnew")
 	llm_context_buf = vim.api.nvim_get_current_buf()
 
@@ -225,8 +234,10 @@ local function get_context_buf()
 	vim.bo[llm_context_buf].bufhidden = "hide" -- Keep content when buffer is hidden
 	vim.bo[llm_context_buf].swapfile = false
 	vim.bo[llm_context_buf].filetype = "markdown"
+	-- Optional: Wrap text for better readability
+	vim.wo.wrap = true
 
-	-- Return focus to the original window (optional, remove if you want to jump to context)
+	-- Return focus to the original window
 	vim.cmd("wincmd p")
 
 	return llm_context_buf

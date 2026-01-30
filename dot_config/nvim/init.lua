@@ -7,8 +7,6 @@ local function command_exists(name)
 	return commands[name] ~= nil
 end
 
-require("user.utils")
-
 -- if vim.fn.has("wsl") then
 -- 	vim.g.clipboard = {
 -- 		name = "win32yank-wsl",
@@ -32,6 +30,7 @@ vim.o.wrap = false
 vim.o.cursorline = true
 vim.o.winborder = "rounded"
 vim.o.cmdheight = 1
+vim.o.autoread = true
 
 -- Indentation
 vim.o.tabstop = 4
@@ -137,8 +136,10 @@ vim.pack.add({
 	{ src = "https://github.com/tronikelis/ts-autotag.nvim" },
 	{ src = "https://github.com/tpope/vim-dadbod" },
 	{ src = "https://github.com/kristijanhusak/vim-dadbod-ui" },
-	{ src = "https://github.com/esmuellert/vscode-diff.nvim" },
+	{ src = "https://github.com/esmuellert/codediff.nvim" },
 	{ src = "https://github.com/MunifTanjim/nui.nvim" },
+	{ src = "https://github.com/OXY2DEV/markview.nvim" },
+	{ src = "https://github.com/serhez/bento.nvim" },
 
 	-- Theme
 	{ src = "https://github.com/navarasu/onedark.nvim" },
@@ -150,39 +151,17 @@ vim.pack.add({
 	{ src = "https://github.com/zbirenbaum/copilot.lua" },
 	{ src = "https://github.com/copilotlsp-nvim/copilot-lsp" },
 	{ src = "https://github.com/coder/claudecode.nvim" },
-
-	{ src = "https://github.com/OXY2DEV/markview.nvim" },
 	{ src = "https://github.com/folke/sidekick.nvim" },
+	{ src = "https://github.com/NickvanDyke/opencode.nvim" },
 })
 
 -- =============================================================================
 -- PLUGIN CONFIGURATIONS
 -- =============================================================================
 
-require("claudecode").setup({
-	terminal = {
-		split_width_percentage = 0.5,
-	},
-})
-
-vim.keymap.set("n", "<leader>ac", "<cmd>ClaudeCode<cr>", { desc = "Toggle Claude" })
-vim.keymap.set("n", "<leader>af", "<cmd>ClaudeCodeFocus<cr>", { desc = "Focus Claude" })
-vim.keymap.set("n", "<leader>ar", "<cmd>ClaudeCode --resume<cr>", { desc = "Resume Claude" })
-vim.keymap.set("n", "<leader>aC", "<cmd>ClaudeCode --continue<cr>", { desc = "Continue Claude" })
-vim.keymap.set("n", "<leader>am", "<cmd>ClaudeCodeSelectModel<cr>", { desc = "Select Claude model" })
-vim.keymap.set("n", "<leader>ab", "<cmd>ClaudeCodeAdd %<cr>", { desc = "Add current buffer" })
-vim.keymap.set("v", "<leader>as", "<cmd>ClaudeCodeSend<cr>", { desc = "Send to Claude" })
-vim.keymap.set("n", "<leader>aa", "<cmd>ClaudeCodeDiffAccept<cr>", { desc = "Accept diff" })
-vim.keymap.set("n", "<leader>ad", "<cmd>ClaudeCodeDiffDeny<cr>", { desc = "Deny diff" })
-
-vim.api.nvim_create_autocmd("FileType", {
-	desc = "Add file",
-	group = vim.api.nvim_create_augroup("ClaudeCodeFileAdd", { clear = true }),
-	pattern = { "NvimTree", "neo-tree", "oil", "minifiles", "netrw" },
-	callback = function()
-		vim.keymap.set("n", "<leader>as", "<cmd>ClaudeCodeTreeAdd<cr>", { desc = "Add file" })
-	end,
-})
+require("bento").setup()
+require("user.utils")
+require("user.ai")
 
 local tnoremap = function(lhs, rhs, opts)
 	opts = opts or {}
@@ -196,59 +175,29 @@ vim.api.nvim_create_autocmd("TermOpen", {
 		local buffer = vim.api.nvim_get_current_buf()
 		local name = vim.api.nvim_buf_get_name(buffer)
 		vim.print(name)
+		-- if name include opencode
 
-		if string.find(name, "claude") then
-			-- 	-- Switch to normal mode when pressing Escape in terminal mode
-			tnoremap("<Esc>", "<C-\\><C-n>", { buffer = buffer })
-			--
-			-- Send Escape when pressing Ctrl-X in terminal mode
-			tnoremap("<C-x>", "<Esc>", { buffer = buffer })
-
-			-- Map Ctrl+h/j/k/l to navigate between tmux panes
-			tnoremap("<C-h>", "<Cmd>NvimTmuxNavigateLeft<CR>", { buffer = buffer })
-			tnoremap("<C-j>", "<Cmd>NvimTmuxNavigateDown<CR>", { buffer = buffer })
-			tnoremap("<C-k>", "<Cmd>NvimTmuxNavigateUp<CR>", { buffer = buffer })
-			tnoremap("<C-l>", "<Cmd>NvimTmuxNavigateRight<CR>", { buffer = buffer })
+		if string.find(name, "opencode") then
+			tnoremap("<C-d>", function()
+				require("opencode").command("session.half.page.down")
+			end, { buffer = buffer })
+			tnoremap("<C-u>", function()
+				require("opencode").command("session.half.page.up")
+			end, { buffer = buffer })
 		end
+		-- 	-- Switch to normal mode when pressing Escape in terminal mode
+		-- tnoremap("<Esc>", "<C-\\><C-n>", { buffer = buffer })
+		--
+		-- Send Escape when pressing Ctrl-X in terminal mode
+		tnoremap("jk", "<C-\\><C-n>", { buffer = buffer })
+
+		-- Map Ctrl+h/j/k/l to navigate between tmux panes
+		tnoremap("<C-h>", "<Cmd>NvimTmuxNavigateLeft<CR>", { buffer = buffer })
+		tnoremap("<C-j>", "<Cmd>NvimTmuxNavigateDown<CR>", { buffer = buffer })
+		tnoremap("<C-k>", "<Cmd>NvimTmuxNavigateUp<CR>", { buffer = buffer })
+		tnoremap("<C-l>", "<Cmd>NvimTmuxNavigateRight<CR>", { buffer = buffer })
 	end,
 })
-
--- Sidekick
-require("sidekick").setup({
-	nes = {
-		enabled = false,
-	},
-	cli = {
-		enabled = true,
-		mux = {
-			enabled = true,
-			backend = "tmux",
-		},
-		tools = {
-			deepseek = { cmd = { "claude", "--settings", os.getenv("HOME") .. "/.claude/env.json" } },
-		},
-	},
-})
-
-vim.keymap.set("n", "<leader>n", function()
-	require("sidekick").nes_jump_or_apply()
-end, { desc = "Goto/Apply Next Edit Suggestion" })
-
-vim.keymap.set("", "<leader>df", function()
-	require("sidekick.cli").send({ msg = "{file}" })
-end, { desc = "Send File" })
-
-vim.keymap.set("x", "<leader>ds", function()
-	require("sidekick.cli").send({ msg = "{selection}" })
-end, { desc = "Send Visual Selection" })
-
-vim.keymap.set({ "x", "n" }, "<leader>dt", function()
-	require("sidekick.cli").send({ msg = "{this}" })
-end, { desc = "Send This" })
-
-vim.keymap.set("", "<leader>dc", function()
-	require("sidekick.cli").toggle({ name = "copilot", focus = false })
-end, { desc = "Sidekick toggle copilot" })
 
 -- Autotag
 require("ts-autotag").setup({
@@ -415,6 +364,8 @@ Snacks.setup({
 		ui_select = true,
 	},
 	gitbrowse = {},
+	terminal = {},
+	input = {},
 })
 
 -- Mini.nvim plugins
@@ -587,7 +538,6 @@ local function setup_treesitter()
 		"toml",
 		"tsx",
 		"typescript",
-		"typescriptreact",
 		"typst",
 		"vim",
 		"yaml",
@@ -787,6 +737,12 @@ end
 vim.keymap.set({ "n", "v" }, "<leader>q", function()
 	local opts = {
 		{
+			name = "Context: Query Location",
+			action = function()
+				feed_cmd("Ql")
+			end,
+		},
+		{
 			name = "Context: Grep 'AND' (Find in files with A + B)",
 			action = function()
 				feed_cmd("Qga")
@@ -810,6 +766,12 @@ vim.keymap.set({ "n", "v" }, "<leader>q", function()
 				feed_cmd("Qt")
 			end,
 		},
+		{
+			name = "Context: Query Snippet",
+			action = function()
+				feed_cmd("Qs")
+			end,
+		},
 	}
 	vim.ui.select(opts, {
 		prompt = "Settings and Options",
@@ -826,7 +788,6 @@ vim.keymap.set({ "n", "v" }, "<leader>q", function()
 end, { desc = "Context Command" })
 
 vim.keymap.set({ "n", "v" }, "<leader>w", function()
-	local mode = vim.fn.mode()
 	local opts = {
 		{
 			name = "Toggle copilot auto trigger",
@@ -838,18 +799,6 @@ vim.keymap.set({ "n", "v" }, "<leader>w", function()
 			name = "Copilot panel",
 			action = function()
 				vim.cmd("Copilot panel")
-			end,
-		},
-		{
-			name = "Sidekick toggle",
-			action = function()
-				vim.cmd("Sidekick cli toggle")
-			end,
-		},
-		{
-			name = "Grep And",
-			action = function()
-				vim.cmd("Sidekick cli toggle")
 			end,
 		},
 		{
@@ -908,4 +857,3 @@ end, { desc = "[S]ettings [O]ptions" })
 local bufjump = require("bufjump")
 vim.keymap.set("n", "[w", bufjump.backward, { desc = "Jump to previous file in jumplist" })
 vim.keymap.set("n", "]w", bufjump.forward, { desc = "Jump to next file in jumplist" })
-vim.keymap.set("t", "<Esc>", [[<C-\><C-n>]])

@@ -102,6 +102,11 @@ function genrepo() {
 	repomix --include-logs --remove-empty-lines --truncate-base64 -o "$(basename "$PWD").xml" "$@"
 }
 
+function genrepomd() {
+	echo 'TODO: add rclone support'
+	repomix --include-logs --remove-empty-lines --truncate-base64 --style markdown -o "$(basename "$PWD").md" "$@"
+}
+
 function y() {
 	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
 	yazi "$@" --cwd-file="$tmp"
