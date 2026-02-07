@@ -140,6 +140,7 @@ vim.pack.add({
 	{ src = "https://github.com/MunifTanjim/nui.nvim" },
 	{ src = "https://github.com/OXY2DEV/markview.nvim" },
 	{ src = "https://github.com/serhez/bento.nvim" },
+	{ src = "https://github.com/lionyxml/gitlineage.nvim" },
 
 	-- Theme
 	{ src = "https://github.com/navarasu/onedark.nvim" },
@@ -158,6 +159,8 @@ vim.pack.add({
 -- =============================================================================
 -- PLUGIN CONFIGURATIONS
 -- =============================================================================
+
+require("gitlineage").setup()
 
 require("bento").setup()
 require("user.utils")
