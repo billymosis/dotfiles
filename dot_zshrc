@@ -8,7 +8,8 @@ export VISUAL=nvim
 export EDITOR=nvim
 export NVM_DIR="$HOME/.nvm"
 export XDG_DATA_DIRS=$XDG_DATA_DIRS:/var/lib/flatpak/exports/share:$HOME/.local/share/flatpak/exports/share
-export ZK_NOTEBOOK_DIR=$HOME/my-notes
+export ZK_NOTEBOOK_DIR="$HOME/my-notes"
+export ZK_CLOUD_DIR="/mnt/p/my-notes"
 
 # Construct PATH
 export PATH=~/.local/bin:$PATH
@@ -87,11 +88,11 @@ source $ZSH/oh-my-zsh.sh
 # ==========================================
 alias v="nvim"
 alias vf="fdfind --type f --hidden --exclude .git \
-    | fzf-tmux -p --reverse -w 80% -h 80% \
-    --preview='batcat --color=always {}' \
-    --preview-window=right:60% \
-    --bind 'ctrl-/:change-preview-window(bottom:60%|hidden|),ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up' \
-    | xargs nvim"
+    | fzf-tmux -p --reverse -w 80% -h 80% \
+    --preview='batcat --color=always {}' \
+    --preview-window=right:60% \
+    --bind 'ctrl-/:change-preview-window(bottom:60%|hidden|),ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up' \
+    | xargs nvim"
 alias lg="lazygit"
 alias lq="lazydocker"
 alias cpcl='xclip -sel clip'
@@ -116,9 +117,34 @@ function y() {
 	rm -f -- "$tmp"
 }
 
-function my_init() {
-	[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+# Master Sync Function
+# Usage: sync_zk up   (Local -> Cloud)
+# Usage: sync_zk down (Cloud -> Local)
+sync_zk() {
+	local direction=$1
+	local excludes=(
+		--exclude=".git/"
+		--exclude=".trash/"
+		--exclude="book/"
+		--exclude="*.pdf"
+		--exclude="*.epub"
+	)
+
+	if [[ "$direction" == "up" ]]; then
+		rsync -rtu "${excludes[@]}" "$ZK_NOTEBOOK_DIR" "$ZK_CLOUD_DIR"
+	elif [[ "$direction" == "down" ]]; then
+		rsync -rtu --delete "${excludes[@]}" "$ZK_CLOUD_DIR" "$ZK_NOTEBOOK_DIR"
+	else
+		echo "Usage: sync_zk [up|down]"
+	fi
 }
+. "$HOME/.atuin/bin/env"
+
+function my_init() {
+	# [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+	eval "$(atuin init zsh)"
+}
+
 zvm_after_init_commands+=(my_init)
 
 # ==========================================

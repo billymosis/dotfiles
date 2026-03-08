@@ -79,12 +79,13 @@ vim.lsp.enable({
 	"ts_ls",
 	"gopls",
 	"html",
-	"jdtls",
-	"java",
+	-- "jdtls",
+	-- "java",
 	"bash-language-server",
 	"kotlin-lsp",
 	"copilot",
 	"templ",
+	"clangd",
 })
 vim.cmd("set completeopt+=noselect,menuone,popup,fuzzy")
 
@@ -154,6 +155,13 @@ vim.pack.add({
 	{ src = "https://github.com/coder/claudecode.nvim" },
 	{ src = "https://github.com/folke/sidekick.nvim" },
 	{ src = "https://github.com/NickvanDyke/opencode.nvim" },
+
+	-- debugger
+	{ src = "https://github.com/mfussenegger/nvim-dap" },
+	{ src = "https://github.com/jay-babu/mason-nvim-dap.nvim" },
+	{ src = "https://github.com/rcarriga/nvim-dap-ui" },
+	{ src = "https://github.com/nvim-neotest/nvim-nio" },
+	{ src = "https://github.com/theHamsta/nvim-dap-virtual-text" },
 })
 
 -- =============================================================================
@@ -273,6 +281,8 @@ require("conform").setup({
 		sh = { "shfmt" },
 		bash = { "shfmt" },
 		zsh = { "shfmt" },
+		cpp = { "clang-format" },
+		sql = { "pg_format" },
 	},
 })
 
@@ -395,14 +405,106 @@ require("mini.comment").setup({
 
 -- Mason (LSP installer)
 require("mason").setup()
-local mason_path = vim.fn.stdpath("data")
 
-vim.lsp.config("jdtls", {
-	cmd = {
-		vim.fn.expand(mason_path .. "/mason/bin/jdtls"),
-		("--jvm-arg=-javaagent:%s"):format(vim.fn.expand(mason_path .. "/mason/packages/jdtls/lombok.jar")),
-	},
+-- =============================================================================
+-- JDTLS (JAVA) & DEBUGGER CONFIGURATION
+-- =============================================================================
+
+require("dapui").setup()
+require("nvim-dap-virtual-text").setup({})
+-- 1. Setup Mason Paths dynamically
+
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = "java",
+	callback = function()
+		local jdtls = require("jdtls")
+
+		-- 1. Setup Paths (Dynamic & Safe)
+		local mason_path = vim.fn.stdpath("data") .. "/mason"
+		local jdtls_path = mason_path .. "/bin/jdtls"
+		local lombok_path = mason_path .. "/packages/jdtls/lombok.jar"
+
+		-- 2. Setup Workspace (CRITICAL for valid Classpath)
+		-- This ensures every project has its own data folder.
+		local project_name = vim.fn.fnamemodify(vim.fn.getcwd(), ":p:h:t")
+		local workspace_dir = vim.fn.stdpath("data") .. "/site/java/workspace-root/" .. project_name
+		local bundles = {}
+
+		-- 3. Find Debug Adapter
+		local debug_path = vim.fn.stdpath("data")
+			.. "/mason/packages/java-debug-adapter/extension/server/com.microsoft.java.debug.plugin-*.jar"
+		local debug_bundle = vim.fn.glob(debug_path, 1)
+		if type(debug_bundle) == "string" then
+			vim.list_extend(bundles, { debug_bundle })
+		end
+
+		local test_path = vim.fn.stdpath("data") .. "/mason/packages/java-test/extension/server/*.jar"
+		local test_bundle_list = vim.split(vim.fn.glob(test_path, 1), "\n")
+
+		if test_bundle_list[1] ~= "" then
+			local excluded = {
+				"com.microsoft.java.test.runner-jar-with-dependencies.jar",
+				"jacocoagent.jar",
+			}
+			-- Iterate over the NEW items found (test_bundle_list), not the existing list (bundles)
+			for _, bundle in ipairs(test_bundle_list) do
+				local fname = vim.fn.fnamemodify(bundle, ":t")
+				if not vim.tbl_contains(excluded, fname) then
+					table.insert(bundles, bundle)
+				end
+			end
+		end
+
+		local config = {
+			cmd = {
+				jdtls_path,
+				"--jvm-arg=-javaagent:" .. lombok_path,
+				"-data",
+				workspace_dir,
+			},
+			root_dir = vim.fs.dirname(vim.fs.find({ ".git", "mvnw", "gradlew" }, { upward = true })[1]),
+			init_options = {
+				bundles = bundles,
+			},
+			on_attach = function(client, bufnr)
+				-- Initialize Debugger
+				jdtls.setup_dap({ hotcodereplace = "auto" })
+				require("jdtls.dap").setup_dap_main_class_configs()
+
+				-- Keymaps
+				local opts = { buffer = bufnr }
+				vim.keymap.set("n", "<leader>df", jdtls.test_class, opts)
+				vim.keymap.set("n", "<leader>dn", jdtls.test_nearest_method, opts)
+			end,
+		}
+
+		-- 4. Start Server
+		jdtls.start_or_attach(config)
+	end,
 })
+
+vim.api.nvim_create_user_command("JavaConfig", function()
+	require("jdtls.dap").setup_dap_main_class_configs()
+	vim.notify("JDTLS: Refreshing debug configurations...", vim.log.levels.INFO)
+end, {})
+
+-- Debugger Keymaps
+vim.keymap.set("n", "<F5>", ":DapContinue<CR>", { desc = "Debug: Start/Continue" })
+vim.keymap.set("n", "<F10>", ":DapStepOver<CR>", { desc = "Debug: Step Over" })
+vim.keymap.set("n", "<F11>", ":DapStepInto<CR>", { desc = "Debug: Step Into" })
+vim.keymap.set("n", "<F12>", ":DapStepOut<CR>", { desc = "Debug: Step Out" })
+vim.keymap.set("n", "<leader>b", ":DapToggleBreakpoint<CR>", { desc = "Debug: Toggle Breakpoint" })
+vim.keymap.set("n", "<leader>B", function()
+	require("dap").set_breakpoint(vim.fn.input("Breakpoint condition: "))
+end, { desc = "Debug: Set Conditional Breakpoint" })
+
+-- Toggle the UI (Variables, Stack, etc.)
+vim.keymap.set("n", "<leader>du", function()
+	require("dapui").toggle()
+end, { desc = "Debug: Toggle UI" })
+
+require("dap.ext.vscode").getconfigs()
+
 vim.lsp.config("bash-language-server", {})
 
 -- TMUX Navigation
