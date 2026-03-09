@@ -7,7 +7,7 @@ id: {{id}}
 
 # {{format-date now "long"}}
 
-## ⚠️ Critical Ino
+## ⚠️ Critical Info
 
 -
 

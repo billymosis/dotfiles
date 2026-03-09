@@ -962,3 +962,26 @@ end, { desc = "[S]ettings [O]ptions" })
 local bufjump = require("bufjump")
 vim.keymap.set("n", "[w", bufjump.backward, { desc = "Jump to previous file in jumplist" })
 vim.keymap.set("n", "]w", bufjump.forward, { desc = "Jump to next file in jumplist" })
+
+-- NOTE SETTINGS
+-- Auto-sync notes to pCloud on save
+vim.api.nvim_create_autocmd("BufWritePost", {
+	pattern = os.getenv("HOME") .. "/my-notes/**/*.md",
+	callback = function()
+		local cloud = os.getenv("ZK_CLOUD_DIR")
+		local local_p = os.getenv("ZK_NOTEBOOK_DIR")
+		if cloud and local_p then
+			vim.fn.jobstart({
+				"rsync",
+				"-rtu",
+				"--exclude=.git/",
+				"--exclude=.trash/",
+				"--exclude=book/",
+				"--exclude=*.pdf",
+				"--exclude=*.epub",
+				local_p .. "/",
+				cloud .. "/",
+			})
+		end
+	end,
+})
