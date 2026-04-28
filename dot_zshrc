@@ -130,10 +130,13 @@ sync_zk() {
 		--exclude="*.epub"
 	)
 
+	# Use trailing slashes on source variables to sync contents
 	if [[ "$direction" == "up" ]]; then
-		rsync -rtu "${excludes[@]}" "$ZK_NOTEBOOK_DIR" "$ZK_CLOUD_DIR"
+		# Syncing contents of local to cloud
+		rsync -rtu "${excludes[@]}" "${ZK_NOTEBOOK_DIR}/" "$ZK_CLOUD_DIR" -v
 	elif [[ "$direction" == "down" ]]; then
-		rsync -rtu --delete "${excludes[@]}" "$ZK_CLOUD_DIR" "$ZK_NOTEBOOK_DIR"
+		# Syncing contents of cloud to local
+		rsync -rtu --delete "${excludes[@]}" "${ZK_CLOUD_DIR}/" "$ZK_NOTEBOOK_DIR" -v
 	else
 		echo "Usage: sync_zk [up|down]"
 	fi

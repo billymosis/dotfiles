@@ -264,7 +264,7 @@ end
 -- Command 1: Qs (Query Snippet)
 -- Logic: If Visual -> Code + Ref. If Normal -> Ref Only.
 vim.api.nvim_create_user_command("Qs", function(opts)
-	local filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":.")
+	local filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":~")
 	local filetype = vim.bo.filetype
 	local output = {}
 
