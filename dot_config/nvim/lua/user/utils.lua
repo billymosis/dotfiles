@@ -294,20 +294,3 @@ vim.api.nvim_create_user_command("Qs", function(opts)
 
 	append_to_context(output)
 end, { range = 0 }) -- range=0 allows us to detect if a range was actually sent
-
--- Command 2: Ql (Query Location)
--- Logic: Always just Filename + Line Number (Visual range or Cursor)
-vim.api.nvim_create_user_command("Ql", function(opts)
-	local filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ":.")
-	local output = {}
-
-	if opts.count > 0 then
-		-- Range provided
-		table.insert(output, "File Reference: " .. filename .. " (Lines " .. opts.line1 .. "-" .. opts.line2 .. ")")
-	else
-		-- Current cursor
-		table.insert(output, "File Reference: " .. filename .. " (Line " .. vim.fn.line(".") .. ")")
-	end
-
-	append_to_context(output)
-end, { range = 0 })
