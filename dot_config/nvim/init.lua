@@ -605,6 +605,7 @@ local plugins = {
 	{
 		src = "https://github.com/mfussenegger/nvim-dap",
 		setup = function()
+			local dap = require("dap")
 			require("dapui").setup()
 			require("nvim-dap-virtual-text").setup({})
 			require("dap.ext.vscode").getconfigs()
@@ -621,6 +622,76 @@ local plugins = {
 			vim.keymap.set("n", "<leader>du", function()
 				require("dapui").toggle()
 			end, { desc = "Debug: Toggle UI" })
+
+			-- configurations
+			dap.adapters.go = {
+				type = "server",
+				port = "${port}",
+				executable = {
+					command = "dlv",
+					args = { "dap", "-l", "127.0.0.1:${port}" },
+				},
+			}
+
+			dap.adapters["pwa-node"] = {
+				type = "server",
+				host = "localhost",
+				port = "${port}",
+				executable = {
+					command = "node",
+					args = {
+						vim.fn.stdpath("data") .. "/mason/packages/js-debug-adapter/js-debug/src/dapDebugServer.js",
+						"${port}",
+					},
+				},
+			}
+
+			dap.providers.configs["general_launcher"] = function(bufnr)
+				local ft = vim.api.nvim_get_option_value("filetype", { buf = bufnr })
+				if ft == "java" then
+					return {
+						{
+							type = "java",
+							request = "launch",
+							name = "Launch Java Class (Manual)",
+							mainClass = function()
+								return vim.fn.input("Main class name: ", "")
+							end,
+						},
+					}
+				elseif ft == "javascript" or ft == "javascriptreact" then
+					return {
+						{
+							type = "pwa-node",
+							request = "launch",
+							name = "Launch Node.js (Current File)",
+							program = "${file}",
+							cwd = "${workspaceFolder}",
+						},
+					}
+				elseif ft == "typescript" or ft == "typescriptreact" then
+					return {
+						{
+							type = "pwa-node",
+							request = "launch",
+							name = "Launch TS (via ts-node)",
+							runtimeExecutable = "ts-node",
+							program = "${file}",
+							cwd = "${workspaceFolder}",
+						},
+					}
+				elseif ft == "go" then
+					return {
+						{
+							type = "go",
+							name = "Debug File",
+							request = "launch",
+							program = "${file}",
+						},
+					}
+				end
+				return {}
+			end
 		end,
 	},
 	{ src = "https://github.com/jay-babu/mason-nvim-dap.nvim" },
