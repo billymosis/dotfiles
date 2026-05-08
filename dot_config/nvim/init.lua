@@ -74,7 +74,7 @@ local plugins = {
 				"html",
 				"bash-language-server",
 				"kotlin-lsp",
-				"copilot",
+				-- "copilot",
 				"templ",
 				"clangd",
 			})
@@ -285,7 +285,25 @@ local plugins = {
 		setup = function()
 			local Snacks = require("snacks")
 			Snacks.setup({
-				picker = { ui_select = true },
+				picker = {
+					ui_select = true,
+					sources = {
+						files = {
+							on_change = function(picker, item)
+								vim.schedule(function()
+									picker.preview.win:set_title(item.file)
+								end)
+							end,
+						},
+						lsp_references = {
+							on_change = function(picker, item)
+								vim.schedule(function()
+									picker.preview.win:set_title(item.file)
+								end)
+							end,
+						},
+					},
+				},
 				gitbrowse = {},
 				terminal = {},
 				input = {},
@@ -570,31 +588,31 @@ local plugins = {
 	-- -------------------------------------------------------------------------
 	-- AI Tools
 	-- -------------------------------------------------------------------------
-	{
-		src = "https://github.com/zbirenbaum/copilot.lua",
-		setup = function()
-			vim.api.nvim_set_hl(0, "CopilotSuggestion", { italic = true, fg = "#555555" })
-			vim.api.nvim_create_autocmd("InsertEnter", {
-				once = true,
-				callback = function()
-					vim.cmd.packadd("copilot.lua")
-					require("copilot").setup({
-						suggestion = { auto_trigger = true },
-						server_opts_overrides = { settings = { telemetry = { telemetryLevel = "off" } } },
-						nes = {
-							enabled = false,
-							keymap = {
-								accept_and_goto = "<leader>p",
-								accept = false,
-								dismiss = "<Esc>",
-							},
-						},
-					})
-				end,
-			})
-		end,
-	},
-	{ src = "https://github.com/copilotlsp-nvim/copilot-lsp" },
+	-- {
+	-- 	src = "https://github.com/zbirenbaum/copilot.lua",
+	-- 	setup = function()
+	-- 		vim.api.nvim_set_hl(0, "CopilotSuggestion", { italic = true, fg = "#555555" })
+	-- 		vim.api.nvim_create_autocmd("InsertEnter", {
+	-- 			once = true,
+	-- 			callback = function()
+	-- 				vim.cmd.packadd("copilot.lua")
+	-- 				require("copilot").setup({
+	-- 					suggestion = { auto_trigger = true },
+	-- 					server_opts_overrides = { settings = { telemetry = { telemetryLevel = "off" } } },
+	-- 					nes = {
+	-- 						enabled = false,
+	-- 						keymap = {
+	-- 							accept_and_goto = "<leader>p",
+	-- 							accept = false,
+	-- 							dismiss = "<Esc>",
+	-- 						},
+	-- 					},
+	-- 				})
+	-- 			end,
+	-- 		})
+	-- 	end,
+	-- },
+	-- { src = "https://github.com/copilotlsp-nvim/copilot-lsp" },
 	{ src = "https://github.com/coder/claudecode.nvim" },
 	{ src = "https://github.com/folke/sidekick.nvim" },
 	{ src = "https://github.com/NickvanDyke/opencode.nvim" },
@@ -855,18 +873,18 @@ end, { desc = "Context Command" })
 -- Settings Menu (<leader>w)
 vim.keymap.set({ "n", "v" }, "<leader>w", function()
 	local opts = {
-		{
-			name = "Toggle copilot auto trigger",
-			action = function()
-				require("copilot.suggestion").toggle_auto_trigger()
-			end,
-		},
-		{
-			name = "Copilot panel",
-			action = function()
-				vim.cmd("Copilot panel")
-			end,
-		},
+		-- {
+		-- 	name = "Toggle copilot auto trigger",
+		-- 	action = function()
+		-- 		require("copilot.suggestion").toggle_auto_trigger()
+		-- 	end,
+		-- },
+		-- {
+		-- 	name = "Copilot panel",
+		-- 	action = function()
+		-- 		vim.cmd("Copilot panel")
+		-- 	end,
+		-- },
 		{
 			name = "Toggle Relative Number",
 			action = function()
