@@ -77,9 +77,24 @@ local plugins = {
 				-- "copilot",
 				"templ",
 				"clangd",
+				"groovyls",
+				"ty",
 			})
 			vim.cmd("set completeopt+=noselect,menuone,popup,fuzzy")
-			vim.lsp.config("bash-language-server", {})
+			vim.lsp.config("ty", {
+				settings = {
+					ty = {
+						configuration = {
+							environment = {
+								-- uv venv ~/.global-python-lsp
+								-- uv pip install --python ~/.global-python-lsp requests
+								python = "~/.global-python-lsp",
+							},
+						},
+					},
+				},
+			})
+			-- vim.lsp.config("bash-language-server", {})
 		end,
 	},
 	{
@@ -120,6 +135,8 @@ local plugins = {
 				"regex",
 				"kotlin",
 				"templ",
+				"java",
+				"groovy",
 			}
 			local nts = require("nvim-treesitter")
 			nts.install(ts_parsers)
@@ -141,8 +158,10 @@ local plugins = {
 				pattern = ts_parsers,
 				callback = function()
 					vim.treesitter.start()
+					vim.wo.foldmethod = "expr"
 					vim.wo.foldexpr = "v:lua.vim.treesitter.foldexpr()"
 					vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+					vim.wo.foldlevel = 99
 				end,
 			})
 		end,
@@ -288,6 +307,13 @@ local plugins = {
 				picker = {
 					ui_select = true,
 					sources = {
+						grep = {
+							on_change = function(picker, item)
+								vim.schedule(function()
+									picker.preview.win:set_title(item.file)
+								end)
+							end,
+						},
 						files = {
 							on_change = function(picker, item)
 								vim.schedule(function()
@@ -901,6 +927,12 @@ vim.keymap.set({ "n", "v" }, "<leader>w", function()
 			name = "Diff current file",
 			action = function()
 				vim.cmd("Git diff -- %")
+			end,
+		},
+		{
+			name = "Open quickfix diagnostic",
+			action = function()
+				vim.diagnostic.setqflist()
 			end,
 		},
 		{
