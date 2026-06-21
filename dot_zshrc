@@ -49,8 +49,8 @@ fi
 ZSH_THEME="billy"
 local my_plugins=(git)
 
-# Only run if not in VSCode
-if [[ "$TERM_PROGRAM" != "vscode" ]]; then
+# Only run if not in VSCode or herdr
+if [[ "$TERM_PROGRAM" != "vscode" && -z "$HERDR_ENV" ]]; then
 
 	# A. If we are ALREADY inside Tmux (The Inner Shell)
 	if [[ -n "$TMUX" ]]; then
@@ -60,7 +60,7 @@ if [[ "$TERM_PROGRAM" != "vscode" ]]; then
 		fi
 
 		# Load heavy plugins only inside tmux
-		my_plugins+=(zsh-autosuggestions kubectl common-aliases zsh-vi-mode)
+		my_plugins+=(zsh-autosuggestions kubectl common-aliases)
 
 	# B. If we are OUTSIDE Tmux (The Launcher)
 	else
@@ -88,7 +88,59 @@ plugins=($my_plugins)
 [[ -d "${HOME}/.cache" ]] || mkdir -p "${HOME}/.cache"
 export ZSH_COMPDUMP="${HOME}/.cache/zcompdump-${ZSH_VERSION}${TMUX:+-tmux}${TERM_PROGRAM:+-${TERM_PROGRAM}}"
 
+# ---- Defer the completion system off the startup critical path ----
+# compinit (OMZ's completion init) is ~70% of shell startup (~250ms). Shadow the
+# compinit that OMZ autoloads with a no-op that only buffers compdef calls, let
+# OMZ load instantly, then run the real compinit + replay the buffered compdefs
+# the moment the line editor first goes idle (prompt already on screen).
+# Trade-off: tab-completion is unavailable for ~150ms after the prompt appears.
+ZSH_DISABLE_COMPFIX=true
+_fast_compdump="${HOME}/.cache/zcompdump-fast-${ZSH_VERSION}${TMUX:+-tmux}${TERM_PROGRAM:+-${TERM_PROGRAM}}"
+_fast_shadow="${HOME}/.cache/zsh-fast-compinit"
+if [[ ! -e "$_fast_shadow/compinit" ]]; then
+	mkdir -p "$_fast_shadow"
+	print -r -- 'typeset -ga _fast_compdefs
+compdef() { _fast_compdefs+=("${(j: :)${(q)@}}") }' >| "$_fast_shadow/compinit"
+fi
+fpath=("$_fast_shadow" $fpath)   # autoload -U compinit now resolves to the no-op
+
 source $ZSH/oh-my-zsh.sh
+
+# Run the real completion init once, deferred to the first idle of the line editor.
+_fast_init_completion() {
+	(( ${_fast_done:-0} )) && return        # idempotent: only the first caller wins
+	_fast_done=1
+	emulate -L zsh
+	fpath=(${fpath:#$_fast_shadow})
+	unfunction compinit compdef 2>/dev/null
+	autoload -Uz compinit
+	local -a fresh=( "$_fast_compdump"(Nmh-20) )
+	if (( $#fresh )); then
+		compinit -C -d "$_fast_compdump"
+	else
+		compinit -d "$_fast_compdump"
+	fi
+	local c
+	for c in $_fast_compdefs; do eval "compdef $c"; done
+	unset _fast_compdefs
+}
+_fast_run_deferred() {
+	[[ -n $_fast_fd ]] && { zle -F $_fast_fd; exec {_fast_fd}<&-; unset _fast_fd; }
+	_fast_init_completion
+}
+# Fallback: if the idle trigger never fires, init on the next prompt regardless.
+_fast_defer_fallback() {
+	(( ${_fast_done:-0} )) || _fast_init_completion
+	add-zsh-hook -d precmd _fast_defer_fallback
+}
+_fast_defer_setup() {
+	add-zsh-hook -d precmd _fast_defer_setup            # run once
+	exec {_fast_fd}< <(:)                               # fd at EOF: fires on first ZLE idle
+	zle -F $_fast_fd _fast_run_deferred
+	add-zsh-hook precmd _fast_defer_fallback
+}
+autoload -Uz add-zsh-hook
+add-zsh-hook precmd _fast_defer_setup
 
 # ==========================================
 # 4. ALIASES & FUNCTIONS
@@ -152,11 +204,23 @@ sync_zk() {
 # . "$HOME/.atuin/bin/env"
 
 function my_init() {
-	# [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-	eval "$(atuin init zsh)"
+	# Cache atuin's generated init (~100ms) instead of regenerating every shell.
+	# Regenerated automatically when the atuin binary is newer than the cache.
+	local _atuin_bin="$(command -v atuin)" _atuin_cache="${HOME}/.cache/atuin-init.zsh"
+	if [[ -n "$_atuin_bin" && ( ! -s "$_atuin_cache" || "$_atuin_bin" -nt "$_atuin_cache" ) ]]; then
+		atuin init zsh > "$_atuin_cache"
+	fi
+	[[ -s "$_atuin_cache" ]] && source "$_atuin_cache"
 }
 
-zvm_after_init_commands+=(my_init)
+# Built-in vi mode (replaced zsh-vi-mode plugin, which cost ~200ms/shell and
+# deferred atuin until after the prompt). atuin now inits during sourcing.
+bindkey -v
+# `vv` in command mode opens the current line in $EDITOR (zvm's old behaviour).
+autoload -Uz edit-command-line
+zle -N edit-command-line
+bindkey -M vicmd 'vv' edit-command-line
+my_init
 
 # ==========================================
 # 5. FINAL SOURCING
@@ -197,7 +261,24 @@ fi
 
 # THIS MUST BE AT THE END
 export SDKMAN_DIR="$HOME/.sdkman"
-[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
+# Lazy-load SDKMAN. sdkman-init.sh costs ~300-500ms per shell; keep the current
+# candidate binaries (java/gradle/spring) on PATH directly and defer the full
+# init (the `sdk` function, completions, auto-env) until first `sdk` invocation.
+# Caveat: .sdkmanrc directory auto-env won't fire until you've run `sdk` once.
+if [[ -d "$SDKMAN_DIR" ]]; then
+	for _sdk_bin in "$SDKMAN_DIR"/candidates/*/current/bin(N); do
+		export PATH="$PATH:${_sdk_bin}"
+	done
+	unset _sdk_bin
+	# Lazy init never sets JAVA_HOME; jdtls/gradle/maven need it for project import.
+	[[ -d "$SDKMAN_DIR/candidates/java/current" ]] && \
+		export JAVA_HOME="$SDKMAN_DIR/candidates/java/current"
+	sdk() {
+		unset -f sdk
+		source "$SDKMAN_DIR/bin/sdkman-init.sh"
+		sdk "$@"
+	}
+fi
 
 # opencode
 export PATH=/Users/hydrax/.opencode/bin:$PATH
