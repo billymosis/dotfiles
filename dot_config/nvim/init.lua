@@ -55,6 +55,9 @@ vim.schedule(function()
 	vim.opt.clipboard = "unnamedplus"
 end)
 
+local utils = require("user.utils")
+require("user.ai")
+
 -- =============================================================================
 -- PLUGIN DEFINITIONS & CONFIGURATIONS
 -- =============================================================================
@@ -308,25 +311,13 @@ local plugins = {
 					ui_select = true,
 					sources = {
 						grep = {
-							on_change = function(picker, item)
-								vim.schedule(function()
-									picker.preview.win:set_title(item.file)
-								end)
-							end,
+							on_change = utils.pickerTitle,
 						},
 						files = {
-							on_change = function(picker, item)
-								vim.schedule(function()
-									picker.preview.win:set_title(item.file)
-								end)
-							end,
+							on_change = utils.pickerTitle,
 						},
 						lsp_references = {
-							on_change = function(picker, item)
-								vim.schedule(function()
-									picker.preview.win:set_title(item.file)
-								end)
-							end,
+							on_change = utils.pickerTitle,
 						},
 					},
 				},
@@ -524,6 +515,13 @@ local plugins = {
 	-- -------------------------------------------------------------------------
 	-- Utilities
 	-- -------------------------------------------------------------------------
+	{
+		src = "https://github.com/andymass/vim-matchup",
+		setup = function()
+			-- may set any options here
+			vim.g.matchup_matchparen_offscreen = { method = "popup" }
+		end,
+	},
 	{
 		src = "https://github.com/nvim-lualine/lualine.nvim",
 		setup = function()
@@ -759,9 +757,6 @@ end, plugins))
 for _, p in ipairs(plugins) do
 	_ = p.setup and p.setup()
 end
-
-require("user.utils")
-require("user.ai")
 
 -- =============================================================================
 -- GENERAL KEYMAPS & AUTOCOMMANDS

@@ -294,3 +294,15 @@ vim.api.nvim_create_user_command("Qs", function(opts)
 
 	append_to_context(output)
 end, { range = 0 }) -- range=0 allows us to detect if a range was actually sent
+
+local M = {}
+
+function M.pickerTitle(picker, item)
+	if item ~= nil then
+		vim.schedule(function()
+			picker.preview.win:set_title(item.file)
+		end)
+	end
+end
+
+return M
