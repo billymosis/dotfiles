@@ -1,0 +1,12 @@
+CLAUDE.md
+
+{{ if ne .chezmoi.os "linux" }}
+# Linux X11 desktop only
+.config/autostart
+.config/bspwm
+.config/sxhkd
+.config/polybar
+.config/xfce4
+.config/chromium-flags.conf
+.config/mimeapps.list
+{{ end }}
