@@ -11,6 +11,7 @@ vim.o.cursorline = true
 vim.o.winborder = "rounded"
 vim.o.cmdheight = 1
 vim.o.autoread = true
+vim.opt.linebreak = true
 
 require("vim._core.ui2").enable({
 	enable = true,
@@ -67,6 +68,18 @@ local plugins = {
 	-- LSP and Language Support
 	-- -------------------------------------------------------------------------
 	{
+		src = "https://github.com/Sengoku11/daml.nvim",
+		setup = function()
+			vim.treesitter.language.register("haskell", "daml")
+			vim.api.nvim_create_autocmd("FileType", {
+				pattern = "daml",
+				callback = function()
+					vim.treesitter.start()
+				end,
+			})
+		end,
+	},
+	{
 		src = "https://github.com/neovim/nvim-lspconfig",
 		setup = function()
 			vim.lsp.enable({
@@ -82,6 +95,7 @@ local plugins = {
 				"clangd",
 				"groovyls",
 				"ty",
+				"marksman"
 			})
 			vim.cmd("set completeopt+=noselect,menuone,popup,fuzzy")
 			vim.lsp.config("ty", {
@@ -288,18 +302,59 @@ local plugins = {
 	-- -------------------------------------------------------------------------
 	-- Navigation and Files
 	-- -------------------------------------------------------------------------
+	-- {
+	-- 	src = "https://github.com/alexghergh/nvim-tmux-navigation",
+	-- 	setup = function()
+	-- 		require("nvim-tmux-navigation").setup({
+	-- 			disable_when_zoomed = true,
+	-- 			keybindings = {
+	-- 				left = "<C-h>",
+	-- 				down = "<C-j>",
+	-- 				up = "<C-k>",
+	-- 				right = "<C-l>",
+	-- 			},
+	-- 		})
+	-- 	end,
+	-- },
 	{
-		src = "https://github.com/alexghergh/nvim-tmux-navigation",
+		src = "https://github.com/aimdevlee/herdr-nvim-nav",
 		setup = function()
-			require("nvim-tmux-navigation").setup({
-				disable_when_zoomed = true,
-				keybindings = {
-					left = "<C-h>",
-					down = "<C-j>",
-					up = "<C-k>",
-					right = "<C-l>",
-				},
-			})
+			require("herdr-nvim-nav").setup()
+		end,
+	},
+	{
+		src = "https://github.com/christoomey/vim-tmux-navigator",
+		setup = function()
+			vim.g.tmux_navigator_no_mappings = 1
+			local function nav(wincmd, dir)
+				local prev = vim.api.nvim_get_current_win()
+				vim.cmd("wincmd " .. wincmd)
+				if vim.api.nvim_get_current_win() ~= prev then
+					return -- moved within Neovim
+				end
+				-- At a split edge: cross into the surrounding multiplexer.
+				if vim.env.HERDR_PANE_ID and vim.env.HERDR_PANE_ID ~= "" then
+					local herdr = vim.env.HERDR_BIN_PATH
+					if herdr == nil or herdr == "" then
+						herdr = "herdr"
+					end
+					vim.fn.system({ herdr, "pane", "focus", "--direction", dir, "--current" })
+				elseif vim.env.TMUX and vim.env.TMUX ~= "" then
+					local tmux = { left = "Left", down = "Down", up = "Up", right = "Right" }
+					pcall(vim.cmd, "TmuxNavigate" .. tmux[dir])
+				end
+			end
+
+			local function map(lhs, wincmd, dir, desc)
+				vim.keymap.set("n", lhs, function()
+					nav(wincmd, dir)
+				end, { silent = true, noremap = true, desc = desc })
+			end
+
+			map("<C-h>", "h", "left", "Navigate left (vim/herdr)")
+			map("<C-j>", "j", "down", "Navigate down (vim/herdr)")
+			map("<C-k>", "k", "up", "Navigate up (vim/herdr)")
+			map("<C-l>", "l", "right", "Navigate right (vim/herdr)")
 		end,
 	},
 	{

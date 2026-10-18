@@ -1,0 +1,54 @@
+onboarding = false
+
+[ui.toast]
+delivery = "terminal"
+
+[ui]
+show_agent_labels_on_pane_borders = false
+confirm_close = false
+prompt_new_tab_name = false
+prompt_new_workspace_name = false
+pane_gaps= true
+
+agent_panel_sort = "spaces"
+[experimental]
+pane_history = true
+
+[theme]
+name = "catppuccin"
+auto_switch = false
+
+[keys]
+split_horizontal = "prefix+s"
+switch_tab = "cmd+1..9"
+switch_workspace = "prefix+1..9"
+goto = "prefix+w"
+workspace_picker = "prefix+g"
+detach = "prefix+d"
+next_workspace = "prefix+n"
+previous_workspace = "prefix+p"
+next_agent = "prefix+shift+n"
+previous_agent = "prefix+shift+p"
+
+[[keys.command]]
+key = "ctrl+h"
+type = "plugin_action"
+command = "herdr-nvim-nav.left"
+
+[[keys.command]]
+key = "ctrl+j"
+type = "plugin_action"
+command = "herdr-nvim-nav.down"
+
+[[keys.command]]
+key = "ctrl+k"
+type = "plugin_action"
+command = "herdr-nvim-nav.up"
+
+[[keys.command]]
+key = "ctrl+l"
+type = "plugin_action"
+command = "herdr-nvim-nav.right"
+
+[keys.indexed]
+tabs = "alt"

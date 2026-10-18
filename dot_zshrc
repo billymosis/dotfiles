@@ -22,6 +22,51 @@ export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
 export PATH=/home/billy/.opencode/bin:$PATH
 export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
 
+## Fuzzy-find a local repo directory and open its GitHub page in the browser
+gho() {
+    # 1. Run fzf and tell it to expect 'ctrl-o' as an alternative to 'Enter'
+    local output
+    output=$(find ~/work -mindepth 1 -maxdepth 1 -type d | fzf \
+        --prompt="🚀 Select Repo [Enter: CD | Ctrl-O: Browser] ➔ " \
+        --expect=ctrl-o)
+
+    # If the user exited without selecting anything, stop here
+    [ -z "$output" ] && return
+
+    # 2. Extract the key pressed (line 1) and the directory path (line 2)
+    local key selected_dir
+    key=$(echo "$output" | sed -n '1p')
+    selected_dir=$(echo "$output" | sed -n '2p')
+
+    # If no directory was selected, stop here
+    [ -z "$selected_dir" ] && return
+
+    # 3. Determine action based on the key pressed
+    if [ "$key" = "ctrl-o" ]; then
+        # --- ACTION A: OPEN IN BROWSER ---
+        local git_url browser_url
+        git_url=$(git -C "$selected_dir" config --get remote.origin.url 2>/dev/null)
+
+        if [ -n "$git_url" ]; then
+            browser_url=$(echo "$git_url" | sed -E 's|git@github.com:|https://github.com/|; s|\.git$||; s|https://.*@github.com/|https://github.com/|')
+        else
+            local repo_name
+            repo_name=$(basename "$selected_dir")
+            browser_url="https://github.com/HydraXTrader/$repo_name"
+        fi
+
+        echo "Opening $browser_url ..."
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            open "$browser_url"
+        else
+            xdg-open "$browser_url" 2>/dev/null || explorer.exe "$browser_url"
+        fi
+    else
+        # --- ACTION B: CD TO DIRECTORY (Default Enter) ---
+        cd "$selected_dir" || return
+    fi
+}
+
 # WSL Windows PATHs bugged out sometimes, so re-add them here
 # export PATH=$PATH:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/WINDOWS/system32:/mnt/c/WINDOWS:/mnt/c/WINDOWS/System32/Wbem:/mnt/c/WINDOWS/System32/WindowsPowerShell/v1.0/
 
@@ -44,16 +89,19 @@ if [ -d "$FNM_PATH" ]; then
 fi
 
 # ==========================================
-# 2. TMUX & WSL CONFIGURATION
+# 2. MULTIPLEXER & WSL CONFIGURATION
 # ==========================================
+# herdr | tmux | anything else (e.g. none) = plain shell
+: ${MULTIPLEXER:=herdr}
+
 ZSH_THEME="billy"
 local my_plugins=(git)
 
 # Only run if not in VSCode or herdr
-if [[ "$TERM_PROGRAM" != "vscode" && -z "$HERDR_ENV" ]]; then
+if [[ "$TERM_PROGRAM" != "vscode" ]]; then
 
 	# A. If we are ALREADY inside Tmux (The Inner Shell)
-	if [[ -n "$TMUX" ]]; then
+	if [[ -n "$TMUX" || -n "$HERDR_ENV" ]]; then
 		# Fix WSL Interop (The "Socket" Issue)
 		if [[ -n "$WSL_INTEROP" && "$(uname)" == "Linux" ]]; then
 			export WSL_INTEROP=/run/WSL/$(ls -tr /run/WSL/ | grep interop | tail -1)
@@ -66,15 +114,22 @@ if [[ "$TERM_PROGRAM" != "vscode" && -z "$HERDR_ENV" ]]; then
 	else
 		session_name="BMP"
 
-		# Ensure session exists
-		tmux has-session -t=$session_name 2>/dev/null
-		if [[ $? -ne 0 ]]; then
-			TMUX='' tmux new-session -d -s "$session_name"
-		fi
+		# Attaching BLOCKS here until you detach. Exports are above this line so
+		# the multiplexer inherits the correct PATH.
+		case "$MULTIPLEXER" in
+			herdr)
+				herdr --session "$session_name"
+				;;
+			tmux)
+				# Ensure session exists
+				tmux has-session -t=$session_name 2>/dev/null
+				if [[ $? -ne 0 ]]; then
+					TMUX='' tmux new-session -d -s "$session_name"
+				fi
 
-		# Attach. This will BLOCK here until you detach.
-		# Because Exports are now above this line, Tmux inherits the correct PATH.
-		tmux attach -t "$session_name"
+				tmux attach -t "$session_name"
+				;;
+		esac
 	fi
 fi
 
@@ -155,14 +210,15 @@ alias vf="fdfind --type f --hidden --exclude .git \
 alias lg="lazygit"
 alias lq="lazydocker"
 alias cpcl='xclip -sel clip'
-alias serena='uvx --from git+https://github.com/oraios/serena serena'
-alias rm='rm'
 alias vpn="$HOME/wireguard/vpn.sh"
+alias c="claude"
+alias m="mdfried"
+# repomix generate xml codebase
 function genrepo() {
 	echo 'TODO: add rclone support'
 	repomix --include-logs --remove-empty-lines --truncate-base64 -o "$(basename "$PWD").xml" "$@"
 }
-
+# repomix generate md codebase
 function genrepomd() {
 	echo 'TODO: add rclone support'
 	repomix --include-logs --remove-empty-lines --truncate-base64 --style markdown -o "$(basename "$PWD").md" "$@"
@@ -222,6 +278,76 @@ zle -N edit-command-line
 bindkey -M vicmd 'vv' edit-command-line
 my_init
 
+bindkey -s '^g' 'gho\n'
+
+# apick — fuzzy-pick a genx Market Operator API operation and drop the ready
+# ./autocurl.sh command onto the prompt line to edit, then hit Enter. Ctrl-G is
+# taken by gho, so this uses Ctrl-F (was self-insert under vi mode). The emitted
+# command uses relative paths, so run it from inside ~/zone. Override the target
+# with APICK_ENV=charlie|bravo|local (default local).
+apick-widget() {
+	local out
+	local -a env_arg
+	[[ -n $APICK_ENV ]] && env_arg=(-e "$APICK_ENV")
+	out="$("$HOME/zone/apick" "${env_arg[@]}")" || { zle reset-prompt; return }
+	[[ -n $out ]] || { zle reset-prompt; return }
+	LBUFFER+="$out"
+	zle reset-prompt
+}
+zle -N apick-widget
+bindkey '^F' apick-widget
+
+# ^P command palette: fuzzy-list the functions & aliases defined in ~/.zshrc,
+# each with the description from the comment directly above it, preview the
+# source, and drop the chosen name onto the prompt line. A "what do I have?"
+# reminder — new functions/aliases appear automatically, no registration.
+_palette_entries() {
+	emulate -L zsh
+	local zrc="$HOME/.zshrc" line desc="" name aname aval
+	while IFS= read -r line; do
+		if [[ $line =~ '^[[:space:]]*#+[[:space:]]?(.*)$' ]]; then
+			[[ -n $match[1] ]] && desc="${desc:+$desc }$match[1]"
+			continue
+		fi
+		if [[ $line =~ '^(function[[:space:]]+)?([A-Za-z0-9_-]+)[[:space:]]*\(\)' ]]; then
+			name=$match[2]
+			if [[ $name != _* && $name != my_init && $name != *-widget && $name != compdef ]]; then
+				printf '%-7s %-16s %s\t%s\n' '[fn]' "$name" "$desc" "$name"
+			fi
+			desc=""
+			continue
+		fi
+		[[ -z $line ]] && continue
+		desc=""
+	done < "$zrc"
+	while IFS= read -r line; do
+		if [[ $line =~ '^alias[[:space:]]+([A-Za-z0-9_-]+)=(.*)$' ]]; then
+			aname=$match[1]; aval=$match[2]
+			aval=${aval#[\"\']}; aval=${aval%[\"\']}
+			printf '%-7s %-16s %s\t%s\n' '[alias]' "$aname" "$aval" "$aname"
+		fi
+	done < "$zrc"
+}
+
+palette-widget() {
+	emulate -L zsh
+	(( $+commands[fzf] )) || { zle reset-prompt; return }
+	local sel name
+	local pv='awk -v n={2} '\''$0 ~ ("^(function[ ]+)?" n "[ ]*[(][)]"){p=1} $0 ~ ("^alias[ ]+" n "="){print;next} p{print} p&&$0=="}"{exit}'\'' ~/.zshrc'
+	sel=$(_palette_entries | sort -f -t$'\t' -k2 | fzf \
+		--delimiter=$'\t' --with-nth=1 --no-sort \
+		--prompt='fn ❯ ' --height=60% --reverse \
+		--header='enter: put name on line  ·  functions & aliases from ~/.zshrc' \
+		--preview="$pv" --preview-window='right:55%:wrap')
+	if [[ -n $sel ]]; then
+		name=${sel##*$'\t'}
+		LBUFFER+="${name} "
+	fi
+	zle reset-prompt
+}
+zle -N palette-widget
+bindkey '^P' palette-widget
+
 # ==========================================
 # 5. FINAL SOURCING
 # ==========================================
@@ -279,6 +405,118 @@ if [[ -d "$SDKMAN_DIR" ]]; then
 		sdk "$@"
 	}
 fi
-
 # opencode
 export PATH=/Users/hydrax/.opencode/bin:$PATH
+
+# --- claude tmux pane picker -------------------------------------------------
+# _claude_panes: emit "target<TAB>session<TAB>window<TAB>path" for every tmux
+# pane whose controlling tty is running a `claude` process (matched by argv, so
+# it works even when claude renames its process title to the version string).
+_claude_panes() {
+	{ ps -Ao tty=,command=; print '==='; \
+	  tmux list-panes -a -F '#{pane_tty}|#{session_name}:#{window_index}.#{pane_index}|#{session_name}|#{window_name}|#{pane_current_path}'; } \
+	| awk '
+		BEGIN { phase = 1 }
+		/^===$/ { phase = 0; next }
+		phase {
+			bin = $2; sub(/.*\//, "", bin)           # basename of argv[0]
+			if (bin == "claude") tty["/dev/" $1] = 1
+			next
+		}
+		{
+			n = split($0, a, "|")                    # tty|target|session|window|path
+			if (a[1] in tty)
+				printf "%s\t%s\t%s\t%s\n", a[2], a[3], a[4], a[5]
+		}'
+}
+
+# claudes: just print the table.
+claudes() {
+	local rows; rows=$(_claude_panes)
+	[[ -z "$rows" ]] && { print "no claude panes found"; return 1; }
+	print "TARGET\tSESSION\tWINDOW\tPATH\n$rows" | column -t -s $'\t'
+}
+
+# cjump [query]: fuzzy-pick a claude pane (fzf) and switch to it. Preview shows
+# the live pane contents. Passing a query pre-filters fzf.
+cjump() {
+	emulate -L zsh
+	local rows sel target
+	rows=$(_claude_panes)
+	[[ -z "$rows" ]] && { print "no claude panes found"; return 1; }
+
+	sel=$(print "$rows" \
+		| column -t -s $'\t' \
+		| fzf --ansi --prompt='claude ❯ ' --height=40% --reverse \
+		      --header='enter: jump   ·   search by window / path' \
+		      --query="${1:-}" \
+		      --preview='tmux capture-pane -ep -t {1} 2>/dev/null | tail -n 40' \
+		      --preview-window='down,50%,wrap' \
+		| awk '{print $1}')
+	[[ -z "$sel" ]] && return
+
+	if [[ -n "$TMUX" ]]; then
+		tmux switch-client -t "${sel%%:*}" \; select-window -t "${sel%.*}" \; select-pane -t "$sel"
+	else
+		tmux select-window -t "${sel%.*}" \; select-pane -t "$sel"
+		tmux attach -t "${sel%%:*}"
+	fi
+}
+
+# Repeat a command N times
+# Usage: repeat_cmd <count> <command...>
+#        repeat_cmd 5 ./autocurl.sh --url '...' --data-raw '...'
+repeat_cmd() {
+  local count="$1"
+  shift
+
+  if [[ -z "$count" || ! "$count" =~ ^[0-9]+$ ]]; then
+    echo "Usage: repeat_cmd <number_of_times> <command>"
+    return 1
+  fi
+
+  for ((i = 1; i <= count; i++)); do
+    echo "--- Execution $i of $count ---"
+    "$@"
+  done
+}
+
+# cjump on Ctrl-E: type-and-run macro (like gho); fire it at an empty prompt.
+bindkey -s '^e' 'cjump\n'
+# -----------------------------------------------------------------------------
+
+. "$HOME/.cargo/env"
+
+# Daml Package Manager (dpm)
+export PATH="$HOME/.dpm/bin:$PATH"
+
+export PATH="$HOME/.daml/bin:$PATH"
+
+# cdwt [query]: fuzzy-pick a git worktree of the current repo and cd into it.
+cdwt() {
+	(( $+commands[fzf] )) || { echo "cdwt: fzf not found" >&2; return 1 }
+	git rev-parse --git-dir >/dev/null 2>&1 || { echo "cdwt: not in a git repo" >&2; return 1 }
+	local sel
+	sel=$(git worktree list | fzf --prompt='worktree ❯ ' --height=40% --reverse \
+		--query="${1:-}" --select-1 --exit-0 \
+		--preview='git -C {1} log --oneline -10 --color=always' --preview-window=right,50%) || return
+	cd "${sel%% *}"
+}
+
+# herdr-nvim-nav passthrough: a live PID in the pane marker makes ctrl+h/j/k/l
+# go to the app instead of moving herdr focus.
+herdr_passthrough() {
+	local cmd=$1; shift
+	if [[ -z "$HERDR_PANE_ID" ]]; then
+		command "$cmd" "$@"
+		return
+	fi
+	local f="${XDG_CACHE_HOME:-$HOME/.cache}/herdr/nvim-panes/$HERDR_PANE_ID"
+	mkdir -p "${f:h}"
+	print -r -- $$ > "$f"
+	command "$cmd" "$@"
+	local rc=$?
+	command rm -f "$f"
+	return $rc
+}
+vi-sql() { herdr_passthrough vi-sql "$@" }
