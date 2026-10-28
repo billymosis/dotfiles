@@ -1,1 +1,4 @@
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+
+# Claude Code's Bash tool runs non-interactive zsh but writes bash-style commands.
+[[ ! -o interactive && -n $CLAUDECODE ]] && setopt sh_word_split no_nomatch no_equals
