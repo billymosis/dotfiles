@@ -342,6 +342,8 @@ local plugins = {
 				elseif vim.env.TMUX and vim.env.TMUX ~= "" then
 					local tmux = { left = "Left", down = "Down", up = "Up", right = "Right" }
 					pcall(vim.cmd, "TmuxNavigate" .. tmux[dir])
+				elseif vim.env.REX_SESSION and vim.env.REX_SESSION ~= "" then
+					vim.fn.system({ "rex", "do", "navfocus", "direction=" .. dir })
 				end
 			end
 

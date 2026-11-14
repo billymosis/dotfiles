@@ -90,7 +90,7 @@ fi
 # ==========================================
 # 2. MULTIPLEXER & WSL CONFIGURATION
 # ==========================================
-# herdr | tmux | anything else (e.g. none) = plain shell
+# hc | herdr | tmux | anything else (e.g. none) = plain shell
 : ${MULTIPLEXER:=herdr}
 
 ZSH_THEME="billy"
@@ -100,7 +100,9 @@ local my_plugins=(git)
 if [[ "$TERM_PROGRAM" != "vscode" ]]; then
 
 	# A. If we are ALREADY inside Tmux (The Inner Shell)
-	if [[ -n "$TMUX" || -n "$HERDR_ENV" ]]; then
+	# HC_TERMINAL_ID: a herdr-core terminal, which includes every Herdr desktop app pane.
+	# REX_SESSION: a Rex pane, which is already a multiplexer.
+	if [[ -n "$TMUX" || -n "$HERDR_ENV" || -n "$HC_TERMINAL_ID" || -n "$REX_SESSION" ]]; then
 		# Fix WSL Interop (The "Socket" Issue)
 		if [[ -n "$WSL_INTEROP" && "$(uname)" == "Linux" ]]; then
 			export WSL_INTEROP=/run/WSL/$(ls -tr /run/WSL/ | grep interop | tail -1)
@@ -116,6 +118,9 @@ if [[ "$TERM_PROGRAM" != "vscode" ]]; then
 		# Attaching BLOCKS here until you detach. Exports are above this line so
 		# the multiplexer inherits the correct PATH.
 		case "$MULTIPLEXER" in
+			hc)
+				hc
+				;;
 			herdr)
 				herdr --session "$session_name"
 				;;
