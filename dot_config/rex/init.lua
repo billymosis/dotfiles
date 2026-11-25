@@ -84,5 +84,16 @@ rex.bind("ctrl+a>x", "pane.close")
 
 rex.bind("ctrl+b>v", "pane.split", { direction = "right" })
 rex.bind("ctrl+b>x", "pane.close")
+rex.bind("ctrl+b>z", "pane.zoom")
 
 rex.bind("ctrl+b>c", "client.tab.new")
+
+rex.bind("cmd+shift+c", "pane.copy_mode.enter")
+rex.bind("ctrl+b>[", "pane.copy_mode.enter")
+
+-- >>> leaf >>>
+-- Managed by `leaf rex install`; `leaf rex uninstall` removes it.
+-- plugin: 574a512c29e0d37d
+dofile("/Users/hydrax/.config/rex/plugins/leaf/init.lua").setup({ bin = { "/opt/homebrew/bin/leaf" } })
+-- open: idle classic
+-- <<< leaf <<<

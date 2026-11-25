@@ -91,7 +91,7 @@ fi
 # 2. MULTIPLEXER & WSL CONFIGURATION
 # ==========================================
 # hc | herdr | tmux | anything else (e.g. none) = plain shell
-: ${MULTIPLEXER:=herdr}
+: ${MULTIPLEXER:=none}
 
 ZSH_THEME="billy"
 local my_plugins=(git)
@@ -101,8 +101,8 @@ if [[ "$TERM_PROGRAM" != "vscode" ]]; then
 
 	# A. If we are ALREADY inside Tmux (The Inner Shell)
 	# HC_TERMINAL_ID: a herdr-core terminal, which includes every Herdr desktop app pane.
-	# REX_SESSION: a Rex pane, which is already a multiplexer.
-	if [[ -n "$TMUX" || -n "$HERDR_ENV" || -n "$HC_TERMINAL_ID" || -n "$REX_SESSION" ]]; then
+	# REX_BLOCK: a Rex pane, which is already a multiplexer.
+	if [[ -n "$TMUX" || -n "$HERDR_ENV" || -n "$HC_TERMINAL_ID" || -n "$REX_BLOCK" ]]; then
 		# Fix WSL Interop (The "Socket" Issue)
 		if [[ -n "$WSL_INTEROP" && "$(uname)" == "Linux" ]]; then
 			export WSL_INTEROP=/run/WSL/$(ls -tr /run/WSL/ | grep interop | tail -1)
@@ -216,7 +216,6 @@ alias lq="lazydocker"
 alias cpcl='xclip -sel clip'
 alias vpn="$HOME/wireguard/vpn.sh"
 alias c="claude"
-alias m="mdfried"
 # repomix generate xml codebase
 function genrepo() {
 	echo 'TODO: add rclone support'
@@ -522,3 +521,6 @@ herdr_passthrough() {
 	return $rc
 }
 vi-sql() { herdr_passthrough vi-sql "$@" }
+
+# Claude Code does not list Rex as a Kitty-graphics terminal; force inline images there only.
+[ "$TERM_PROGRAM" = rex ] && export CLAUDE_CODE_FORCE_TERMINAL_IMAGES=1
